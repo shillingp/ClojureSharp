@@ -1,5 +1,4 @@
-﻿using ClojureSharp;
-using ClojureSharp.SyntaxTreeParser;
+﻿using ClojureSharp.SyntaxTreeParser;
 using ClojureSharp.Tokenizer;
 using ClojureSharp.Transpiler;
 

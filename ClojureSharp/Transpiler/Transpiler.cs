@@ -56,9 +56,10 @@ internal class Transpiler(SyntaxTreeNode abstractSyntaxTree)
             .Where(treeNode => treeNode is not { Type: SyntaxTreeNodeType.MethodArgument }) ?? []) 
             output.Append(ConvertAbstractSyntaxTreeToCode(child));
 
-        output.AppendLine(")");
-        
-        return output.ToString();
+        return output
+            .AppendLine(")")
+            .AppendLine()
+            .ToString();
     }
 
     private string ConvertExpressionSyntaxTreeNodeToCode(SyntaxTreeNode syntaxTreeNode)
@@ -75,12 +76,25 @@ internal class Transpiler(SyntaxTreeNode abstractSyntaxTree)
     
     private string ConvertAssignmentSyntaxTreeNodeToCode(SyntaxTreeNode syntaxTreeNode)
     {
-        return new StringBuilder()
-            .Append("(let [")
-            .Append(syntaxTreeNode.Value)
-            .Append(' ')
-            .Append(ConvertAbstractSyntaxTreeToCode(syntaxTreeNode.Children![0]))
-            .Append("]")
+        StringBuilder output = new StringBuilder()
+            .Append("(let [");
+
+        if (syntaxTreeNode.Children?.Any(child => child is { Type: SyntaxTreeNodeType.Assignment}) ?? false)
+        {
+            output
+                .AppendJoin(Environment.NewLine, syntaxTreeNode.Children
+                    .Select(child => child.Value + " " + ConvertAbstractSyntaxTreeToCode(child.Children![0])));
+        }
+        else
+        {
+            output
+                .Append(syntaxTreeNode.Value)
+                .Append(' ')
+                .Append(ConvertAbstractSyntaxTreeToCode(syntaxTreeNode.Children![0]));
+        }
+            
+        return output
+            .AppendLine("]")
             .ToString();
     }
 

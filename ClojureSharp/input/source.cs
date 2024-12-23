@@ -3,8 +3,8 @@
     int AddOnePlusTwo(int a, int b)
     {
         int foo = 6;
-        bool thing = a == b;
-        
-        return 10 + 2 + 5.1;
+        return 10 + a * b;
     }
+
+    AddOnePlusTwo(1 + 2, 2);
 }
