@@ -1,11 +1,16 @@
 ﻿namespace TestNamespace
 {
-    int AddOnePlusTwo(int a, int b)
+    int ExampleMethod(int a, int b)
     {
         int foo = 6;
         int bar = null;
+
+        ExampleMethod(1, 2);
+
+        bar = 10;
+        
         return 10 + a * b;
     }
 
-    AddOnePlusTwo((((1 + 2))), 2);
+    ExampleMethod((((1 + 2))), 2);
 }

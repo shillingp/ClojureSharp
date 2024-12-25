@@ -179,14 +179,13 @@ internal class SyntaxTreeBuilder(Token[] abstractSyntaxTree)
                 is int closeParenthesisIndex and >= 0)
             return ParseExpression(expressionTokens[1..closeParenthesisIndex]);
 
-        if (expressionTokens[0] is { Type: TokenType.TypeDeclarationToken }
-            && expressionTokens[1] is { Type: TokenType.NameIdentifierToken }
-            && expressionTokens[2] is { Type: TokenType.AssignmentOperatorToken })
+        if (expressionTokens.IndexOf(token => token is { Type: TokenType.AssignmentOperatorToken }) is int assignmentOperatorIndex and > 0
+            && expressionTokens[assignmentOperatorIndex - 1] is { Type: TokenType.NameIdentifierToken} thing)
             return new SyntaxTreeNode
             {
-                Value = expressionTokens[1].Value!,
+                Value = thing.Value!,
                 Type = SyntaxTreeNodeType.Assignment,
-                Children = [ParseExpression(expressionTokens[3..])],
+                Children = [ParseExpression(expressionTokens[(assignmentOperatorIndex+1)..])]
             };
         
         if (expressionTokens[0] is { Type: TokenType.NameIdentifierToken}
