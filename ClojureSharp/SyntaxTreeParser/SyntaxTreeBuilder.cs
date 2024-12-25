@@ -176,10 +176,10 @@ internal class SyntaxTreeBuilder(Token[] abstractSyntaxTree)
 
         if (expressionTokens[0] is { Type: TokenType.OpenParenthesisToken }
             && Array.FindLastIndex(expressionTokens, token => token is { Type: TokenType.CloseParenthesisToken})
-                is int closeParenthesisIndex and >= 0)
+                is { } closeParenthesisIndex and >= 0)
             return ParseExpression(expressionTokens[1..closeParenthesisIndex]);
 
-        if (expressionTokens.IndexOf(token => token is { Type: TokenType.AssignmentOperatorToken }) is int assignmentOperatorIndex and > 0
+        if (expressionTokens.IndexOf(token => token is { Type: TokenType.AssignmentOperatorToken }) is { } assignmentOperatorIndex and > 0
             && expressionTokens[assignmentOperatorIndex - 1] is { Type: TokenType.NameIdentifierToken} thing)
             return new SyntaxTreeNode
             {
@@ -204,7 +204,7 @@ internal class SyntaxTreeBuilder(Token[] abstractSyntaxTree)
                     .ToArray()
             };
         
-        if (expressionTokens.IndexOf(token => token is {Type: TokenType.NumericOperationToken}) is int numericOperationIndex and >= 0)
+        if (expressionTokens.IndexOf(token => token is {Type: TokenType.NumericOperationToken}) is { } numericOperationIndex and >= 0)
         {
             return new SyntaxTreeNode
             {
@@ -220,7 +220,7 @@ internal class SyntaxTreeBuilder(Token[] abstractSyntaxTree)
             };
         }
         
-        if (expressionTokens.IndexOf(token => token is { Type: TokenType.EqualityOperatorToken }) is int equalityIndex and >= 0)
+        if (expressionTokens.IndexOf(token => token is { Type: TokenType.EqualityOperatorToken }) is { } equalityIndex and >= 0)
         {
             return new SyntaxTreeNode
             {
