@@ -1,12 +1,12 @@
-﻿using System.Text;
-using ClojureSharp.Extensions;
+﻿using System.Diagnostics.Contracts;
+using System.Text;
 using ClojureSharp.SyntaxTreeParser;
 
 namespace ClojureSharp.Transpiler;
 
 internal class Transpiler(SyntaxTreeNode abstractSyntaxTree)
 {
-
+    [Pure]
     internal string Transpile()
     {
         StringBuilder output = new StringBuilder();
@@ -19,7 +19,8 @@ internal class Transpiler(SyntaxTreeNode abstractSyntaxTree)
         return output.ToString();
     }
 
-    private string ConvertAbstractSyntaxTreeToCode(SyntaxTreeNode syntaxTreeNode)
+    [Pure]
+    private static string ConvertAbstractSyntaxTreeToCode(SyntaxTreeNode syntaxTreeNode)
     {
         return syntaxTreeNode.Type switch
         {
@@ -28,12 +29,13 @@ internal class Transpiler(SyntaxTreeNode abstractSyntaxTree)
             SyntaxTreeNodeType.Expression => ConvertExpressionSyntaxTreeNodeToCode(syntaxTreeNode),
             SyntaxTreeNodeType.Assignment => ConvertAssignmentSyntaxTreeNodeToCode(syntaxTreeNode),
             SyntaxTreeNodeType.EqualityCheck => ConvertEqualityCheckSyntaxTreeNodeToCode(syntaxTreeNode),
-            SyntaxTreeNodeType.Literal => syntaxTreeNode.Value,
+            SyntaxTreeNodeType.Literal => ConvertLiteralSyntaxTreeNodeToCode(syntaxTreeNode),
             _ => throw new Exception($"Unable to convert abstract syntax tree node {syntaxTreeNode.Type} to code"),
         };
     }
 
-    private string ConvertNamespaceSyntaxTreeNodeToCode(SyntaxTreeNode syntaxTreeNode)
+    [Pure]
+    private static string ConvertNamespaceSyntaxTreeNodeToCode(SyntaxTreeNode syntaxTreeNode)
     {
         return new StringBuilder()
             .AppendLine($"(ns {syntaxTreeNode.Value})")
@@ -41,7 +43,8 @@ internal class Transpiler(SyntaxTreeNode abstractSyntaxTree)
             .ToString();
     }
     
-    private string ConvertMethodSyntaxTreeNodeToCode(SyntaxTreeNode syntaxTreeNode)
+    [Pure]
+    private static string ConvertMethodSyntaxTreeNodeToCode(SyntaxTreeNode syntaxTreeNode)
     {
         StringBuilder output = new StringBuilder()
             .Append("(defn ")
@@ -62,7 +65,8 @@ internal class Transpiler(SyntaxTreeNode abstractSyntaxTree)
             .ToString();
     }
 
-    private string ConvertExpressionSyntaxTreeNodeToCode(SyntaxTreeNode syntaxTreeNode)
+    [Pure]
+    private static string ConvertExpressionSyntaxTreeNodeToCode(SyntaxTreeNode syntaxTreeNode)
     {
         return new StringBuilder()
             .Append('(')
@@ -74,7 +78,8 @@ internal class Transpiler(SyntaxTreeNode abstractSyntaxTree)
             .ToString();
     }
     
-    private string ConvertAssignmentSyntaxTreeNodeToCode(SyntaxTreeNode syntaxTreeNode)
+    [Pure]
+    private static string ConvertAssignmentSyntaxTreeNodeToCode(SyntaxTreeNode syntaxTreeNode)
     {
         StringBuilder output = new StringBuilder()
             .Append("(let [");
@@ -98,7 +103,8 @@ internal class Transpiler(SyntaxTreeNode abstractSyntaxTree)
             .ToString();
     }
 
-    private string ConvertEqualityCheckSyntaxTreeNodeToCode(SyntaxTreeNode syntaxTreeNode)
+    [Pure]
+    private static string ConvertEqualityCheckSyntaxTreeNodeToCode(SyntaxTreeNode syntaxTreeNode)
     {
         return new StringBuilder()
             .Append("(= ")
@@ -106,5 +112,15 @@ internal class Transpiler(SyntaxTreeNode abstractSyntaxTree)
                 .Select(ConvertAbstractSyntaxTreeToCode))
             .Append(')')
             .ToString();
+    }
+    
+    [Pure]
+    private static string ConvertLiteralSyntaxTreeNodeToCode(SyntaxTreeNode syntaxTreeNode)
+    {
+        return syntaxTreeNode.Value switch
+        {
+            "null" => "nil",
+            _ => syntaxTreeNode.Value
+        };
     }
 }

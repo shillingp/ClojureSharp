@@ -31,8 +31,12 @@ internal class Tokenizer(string sourceCode)
                 {
                     "namespace"
                         => new Token(TokenType.NamespaceToken, parsedIdentifier),
-                    "int" or "double" or "string" or "bool" 
+                    "int" or "double" or "string" or "bool"
                         => new Token(TokenType.TypeDeclarationToken, parsedIdentifier),
+                    "true" or "false" 
+                        => new Token(TokenType.BooleanLiteralToken, parsedIdentifier),
+                    "null"
+                        => new Token(TokenType.NullLiteralToken, parsedIdentifier),
                     "return" 
                         => new Token(TokenType.ReturnToken),
                     _ when char.IsDigit(parsedIdentifier[0])
@@ -43,35 +47,48 @@ internal class Tokenizer(string sourceCode)
                 continue;
             }
 
-            if (character is '=')
+            if (char.IsSymbol(character) || char.IsPunctuation(character))
             {
-                if (Peek(2) is '=')
+                int peekCounter = 1;
+                string parsedSymbolSequence = "";
+                while (Peek(peekCounter++) is { } peekedSymbol && (char.IsSymbol(peekedSymbol) || char.IsPunctuation(peekedSymbol)))
+                    parsedSymbolSequence += peekedSymbol;
+
+                Token? matchingToken = parsedSymbolSequence switch
                 {
-                    tokenBuffer.Enqueue(new Token(TokenType.EqualityOperatorToken));
-                    Consume(2);
+                    "==" => new Token(TokenType.EqualityOperatorToken),
+                    "&&" or "||" => new Token(TokenType.BooleanOperationToken, parsedSymbolSequence),
+                    _ => null
+                };
+
+                if (matchingToken is not null)
+                {
+                    tokenBuffer.Enqueue(matchingToken);
+                    Consume(parsedSymbolSequence.Length);
                     continue;
                 }
                 
-                tokenBuffer.Enqueue(new Token(TokenType.AssignmentOperatorToken));
-                
+                tokenBuffer.Enqueue(character switch
+                {
+                    '=' => new Token(TokenType.AssignmentOperatorToken),
+                    '(' => new Token(TokenType.OpenParenthesisToken),
+                    ')' => new Token(TokenType.CloseParenthesisToken),
+                    '{' => new Token(TokenType.OpenScopeToken),
+                    '}' => new Token(TokenType.CloseScopeToken),
+                    ';' => new Token(TokenType.SemicolonToken),
+                    '+' or '-' or '*' or '/' or '%'
+                        => new Token(TokenType.NumericOperationToken, character.ToString()),
+                    '|' or '&'
+                        => new Token(TokenType.BooleanOperationToken, character.ToString()),
+                    ',' => new Token(TokenType.CommaToken),
+                    _ => throw new FormatException($"Unrecognized character '{character}'.")
+                });
+
                 Consume();
                 continue;
             }
             
-            tokenBuffer.Enqueue(character switch
-            {
-                '(' => new Token(TokenType.OpenParenthesisToken),
-                ')' => new Token(TokenType.CloseParenthesisToken),
-                '{' => new Token(TokenType.OpenScopeToken),
-                '}' => new Token(TokenType.CloseScopeToken),
-                ';' => new Token(TokenType.SemicolonToken),
-                '+' or '-' or '*' or '/'
-                    => new Token(TokenType.NumericOperationToken, character.ToString()),
-                ',' => new Token(TokenType.CommaToken),
-                _ => throw new Exception("Valid token not found!")
-            });
-            
-            Consume();
+            throw new Exception($"Unknown character '{character}'");
         }
 
         return tokenBuffer.ToArray();

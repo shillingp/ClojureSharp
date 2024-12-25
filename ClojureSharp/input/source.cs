@@ -3,8 +3,9 @@
     int AddOnePlusTwo(int a, int b)
     {
         int foo = 6;
+        int bar = null;
         return 10 + a * b;
     }
 
-    AddOnePlusTwo(1 + 2, 2);
+    AddOnePlusTwo((((1 + 2))), 2);
 }

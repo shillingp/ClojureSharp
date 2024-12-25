@@ -30,8 +30,12 @@ internal enum TokenType
     
     ReturnToken,
     
+    NullLiteralToken,
     NumericLiteralToken,
+    BooleanLiteralToken,
+    
     NumericOperationToken,
+    BooleanOperationToken,
     
     AssignmentOperatorToken,
     EqualityOperatorToken,

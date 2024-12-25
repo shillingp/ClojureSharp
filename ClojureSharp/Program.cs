@@ -7,8 +7,8 @@ string inputCodeText = await File.ReadAllTextAsync("../../../input/source.cs");
 Tokenizer tokenizer = new Tokenizer(inputCodeText);
 Token[] sourceCodeTokens = tokenizer.Tokenize();
 
-SyntaxTreeParser syntaxTreeParser = new SyntaxTreeParser(sourceCodeTokens);
-SyntaxTreeNode abstractSyntaxTree = syntaxTreeParser.Parse();
+SyntaxTreeBuilder syntaxTreeBuilder = new SyntaxTreeBuilder(sourceCodeTokens);
+SyntaxTreeNode abstractSyntaxTree = syntaxTreeBuilder.Parse();
 
 Transpiler transpiler = new Transpiler(abstractSyntaxTree);
 string transpiledCode = transpiler.Transpile();

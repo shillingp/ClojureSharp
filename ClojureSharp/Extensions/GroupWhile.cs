@@ -25,17 +25,17 @@ public static partial class LinqExtensions
     public static IEnumerable<IEnumerable<T>> GroupWhile<T>(this IEnumerable<T> source, Func<T, T, bool> condition)
     {
         T previousItem = source.First();
-        Stack<T> currentGroupList = new Stack<T>();
-        currentGroupList.Push(previousItem);
+        List<T> currentGroupList = new List<T>();
+        currentGroupList.Add(previousItem);
 
         foreach (T currentItem in source.Skip(1))
         {
             if (condition(previousItem, currentItem) == false)
             {
                 yield return currentGroupList;
-                currentGroupList = new Stack<T>();
+                currentGroupList = new List<T>();
             }
-            currentGroupList.Push(currentItem);
+            currentGroupList.Add(currentItem);
             previousItem = currentItem;
         }
 
