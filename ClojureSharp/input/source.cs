@@ -6,8 +6,8 @@
 
         if (foo == 6)
             return foo;
-        
-        return 10 + a * b;
+        else
+            return 10 + a * b;
     }
 
     ExampleMethod((((1 + 2))), 2);

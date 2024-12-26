@@ -133,7 +133,7 @@ internal class SyntaxTreeBuilder(Token[] sourceTokens)
         int tokenIndex = 0;
         while (tokenIndex < methodBodyTokens.Length)
         {
-            if (methodBodyTokens[tokenIndex] is { Type: TokenType.ReturnToken })
+            if (methodBodyTokens[tokenIndex] is { Type: TokenType.ReturnToken or TokenType.CloseScopeToken })
             {
                 tokenIndex++;
                 continue;
@@ -176,6 +176,9 @@ internal class SyntaxTreeBuilder(Token[] sourceTokens)
     [Pure]
     private static SyntaxTreeNode ParseExpression(Token[] expressionTokens)
     {
+        if (expressionTokens.Length == 0)
+            throw new Exception("No tokens to parse");
+        
         if (expressionTokens[^1] is {Type: TokenType.SemicolonToken })
             expressionTokens = expressionTokens[..^1];
         
@@ -205,6 +208,18 @@ internal class SyntaxTreeBuilder(Token[] sourceTokens)
                 [
                     ParseExpression(expressionTokens[2..branchCheckParenthesisIndex]),
                     ..ParseInternalScope(expressionTokens[(branchCheckParenthesisIndex + 2)..])
+                ]
+            };
+        }
+
+        if (expressionTokens[0] is { Type: TokenType.BranchingOperatorToken, Value: "else" })
+        {
+            return new SyntaxTreeNode
+            {
+                Type = SyntaxTreeNodeType.Branch,
+                Children =
+                [
+                    ParseExpression(expressionTokens[1..]),
                 ]
             };
         }
