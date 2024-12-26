@@ -145,12 +145,13 @@ internal class Transpiler(SyntaxTreeNode abstractSyntaxTree)
             output.AppendLine(ConvertAbstractSyntaxTreeToCode(syntaxTreeNode.Children[indexOffset]));
         else
         {
-            output.AppendLine("(do ");
-            output.AppendJoin(Environment.NewLine, syntaxTreeNode.Children!.Skip(indexOffset)
-                .Select(ConvertAbstractSyntaxTreeToCode));
-            output.AppendLine(")");
+            output
+                .AppendLine("(do ")
+                .AppendJoin(Environment.NewLine, syntaxTreeNode.Children!.Skip(indexOffset)
+                    .Select(ConvertAbstractSyntaxTreeToCode))
+                .AppendLine(")");
         }
-        
+
         return output.ToString();
     }
 }
