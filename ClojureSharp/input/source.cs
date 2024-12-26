@@ -3,11 +3,9 @@
     int ExampleMethod(int a, int b)
     {
         int foo = 6;
-        int bar = null;
 
-        ExampleMethod(1, 2);
-
-        bar = 10;
+        if (foo == 6)
+            return foo;
         
         return 10 + a * b;
     }

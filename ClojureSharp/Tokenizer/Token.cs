@@ -1,14 +1,24 @@
 ﻿namespace ClojureSharp.Tokenizer;
 
-internal class Token(TokenType tokenType)
+internal record struct Token
 {
-    internal TokenType Type = tokenType;
+    internal TokenType Type;
     internal string? Value;
 
+    internal Token(TokenType tokenType)
+    {
+        Type = tokenType;
+    }
+    
     internal Token(TokenType tokenType, string value)
         : this(tokenType)
     {
         Value = value;
+    }
+
+    public override string ToString()
+    {
+        return $"{{Type: {Type}, Value: {Value}}}";
     }
 }
 
@@ -39,4 +49,6 @@ internal enum TokenType
     
     AssignmentOperatorToken,
     EqualityOperatorToken,
+    
+    BranchingOperatorToken
 }

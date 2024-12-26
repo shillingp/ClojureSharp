@@ -39,6 +39,8 @@ internal class Tokenizer(string sourceCode)
                         => new Token(TokenType.NullLiteralToken, parsedIdentifier),
                     "return" 
                         => new Token(TokenType.ReturnToken),
+                    "if" or "else"
+                        => new Token(TokenType.BranchingOperatorToken, parsedIdentifier),
                     _ when char.IsDigit(parsedIdentifier[0])
                         => new Token(TokenType.NumericLiteralToken, parsedIdentifier),
                     _ => new Token(TokenType.NameIdentifierToken, parsedIdentifier)
@@ -63,7 +65,7 @@ internal class Tokenizer(string sourceCode)
 
                 if (matchingToken is not null)
                 {
-                    tokenBuffer.Enqueue(matchingToken);
+                    tokenBuffer.Enqueue(matchingToken.Value);
                     Consume(parsedSymbolSequence.Length);
                     continue;
                 }

@@ -15,5 +15,6 @@ internal enum SyntaxTreeNodeType
     Literal,
     Expression,
     Assignment,
-    EqualityCheck
+    EqualityCheck,
+    Branch
 }

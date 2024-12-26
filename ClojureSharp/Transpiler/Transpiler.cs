@@ -30,6 +30,7 @@ internal class Transpiler(SyntaxTreeNode abstractSyntaxTree)
             SyntaxTreeNodeType.Assignment => ConvertAssignmentSyntaxTreeNodeToCode(syntaxTreeNode),
             SyntaxTreeNodeType.EqualityCheck => ConvertEqualityCheckSyntaxTreeNodeToCode(syntaxTreeNode),
             SyntaxTreeNodeType.Literal => ConvertLiteralSyntaxTreeNodeToCode(syntaxTreeNode),
+            SyntaxTreeNodeType.Branch => ConvertBranchSyntaxTreeToCode(syntaxTreeNode),
             _ => throw new Exception($"Unable to convert abstract syntax tree node {syntaxTreeNode.Type} to code"),
         };
     }
@@ -122,5 +123,33 @@ internal class Transpiler(SyntaxTreeNode abstractSyntaxTree)
             "null" => "nil",
             _ => syntaxTreeNode.Value
         };
+    }
+
+    [Pure]
+    private static string ConvertBranchSyntaxTreeToCode(SyntaxTreeNode syntaxTreeNode)
+    {
+        StringBuilder output = new StringBuilder();
+        
+        if (syntaxTreeNode.Children![0] is { Type: SyntaxTreeNodeType.EqualityCheck })
+        {
+            output.Append("(if ");
+            output.AppendLine(ConvertAbstractSyntaxTreeToCode(syntaxTreeNode.Children![0]));
+
+            if (syntaxTreeNode.Children.Length == 2)
+                output.AppendLine(ConvertAbstractSyntaxTreeToCode(syntaxTreeNode.Children[1]));
+            else
+            {
+                output.AppendLine("(do ");
+                    output.AppendJoin(Environment.NewLine, syntaxTreeNode.Children!.Skip(1)
+                        .Select(ConvertAbstractSyntaxTreeToCode));
+                output.AppendLine(")");
+            }
+        }
+        else
+        {
+            // TODO: else
+        }
+        
+        return output.ToString();
     }
 }

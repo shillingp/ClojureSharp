@@ -4,35 +4,35 @@ using ClojureSharp.Extensions;
 
 namespace ClojureSharp.SyntaxTreeParser;
 
-internal class SyntaxTreeBuilder(Token[] abstractSyntaxTree)
+internal class SyntaxTreeBuilder(Token[] sourceTokens)
 {
     internal SyntaxTreeNode Parse()
     { 
         int currentIndex = 0;
         
-        if (abstractSyntaxTree[0] is not { Type: TokenType.NamespaceToken }
-            && abstractSyntaxTree[1] is not { Type: TokenType.NameIdentifierToken})
+        if (sourceTokens[0] is not { Type: TokenType.NamespaceToken }
+            && sourceTokens[1] is not { Type: TokenType.NameIdentifierToken})
             throw new Exception("Namespace not found");
         
         List<SyntaxTreeNode> namespaceNodes = new List<SyntaxTreeNode>();
             
-        while (currentIndex < abstractSyntaxTree.Length)
+        while (currentIndex < sourceTokens.Length)
         {
-            if (abstractSyntaxTree[currentIndex] is { Type: TokenType.TypeDeclarationToken }
-                && abstractSyntaxTree[currentIndex + 1] is { Type: TokenType.NameIdentifierToken }
-                && abstractSyntaxTree[currentIndex + 2] is { Type: TokenType.OpenParenthesisToken })
+            if (sourceTokens[currentIndex] is { Type: TokenType.TypeDeclarationToken }
+                && sourceTokens[currentIndex + 1] is { Type: TokenType.NameIdentifierToken }
+                && sourceTokens[currentIndex + 2] is { Type: TokenType.OpenParenthesisToken })
             {
-                namespaceNodes.Add(ParseMethod(abstractSyntaxTree[currentIndex..]));
+                namespaceNodes.Add(ParseMethod(sourceTokens[currentIndex..]));
                 
-                currentIndex = FindIndexOfLastClosingScope(currentIndex);
+                currentIndex = FindIndexOfLastClosingScope(sourceTokens, currentIndex);
             }
-            else if (abstractSyntaxTree[currentIndex] is { Type: TokenType.NameIdentifierToken }
-                && abstractSyntaxTree[currentIndex + 1] is { Type: TokenType.OpenParenthesisToken })
+            else if (sourceTokens[currentIndex] is { Type: TokenType.NameIdentifierToken }
+                && sourceTokens[currentIndex + 1] is { Type: TokenType.OpenParenthesisToken })
             {
-                int semiColonIndex = currentIndex + abstractSyntaxTree[currentIndex..]
+                int semiColonIndex = currentIndex + sourceTokens[currentIndex..]
                     .IndexOf(token => token.Type == TokenType.SemicolonToken);
                 
-                namespaceNodes.Add(ParseExpression(abstractSyntaxTree[currentIndex..semiColonIndex]));
+                namespaceNodes.Add(ParseExpression(sourceTokens[currentIndex..semiColonIndex]));
                 currentIndex = semiColonIndex;
             }
             
@@ -41,21 +41,21 @@ internal class SyntaxTreeBuilder(Token[] abstractSyntaxTree)
 
         return new SyntaxTreeNode
         {
-            Value = abstractSyntaxTree[1].Value!,
+            Value = sourceTokens[1].Value!,
             Type = SyntaxTreeNodeType.Namespace,
             Children = namespaceNodes.ToArray(),
         };
     }
 
     [Pure]
-    private int FindIndexOfLastClosingScope(int currentIndex)
+    private static int FindIndexOfLastClosingScope(Token[] tokens, int startingPosition)
     {
         uint openScopeCount = 0;
         int? firstOpeningScope = null;
 
-        for (int i = currentIndex; i < abstractSyntaxTree.Length; i++)
+        for (int i = startingPosition; i < tokens.Length; i++)
         {
-            Token token = abstractSyntaxTree[i];
+            Token token = tokens[i];
             if (token is { Type: TokenType.CloseScopeToken } && --openScopeCount == 0)
                 return i;
             
@@ -107,7 +107,7 @@ internal class SyntaxTreeBuilder(Token[] abstractSyntaxTree)
             Type = SyntaxTreeNodeType.Method,
             Children = [
                 ..ParseMethodArguments(methodArgumentTokens),
-                ..ParseMethodBody(methodBodyTokens)
+                ..ParseInternalScope(methodBodyTokens)
             ]
         };
     }
@@ -126,7 +126,7 @@ internal class SyntaxTreeBuilder(Token[] abstractSyntaxTree)
     }
 
     [Pure]
-    private static SyntaxTreeNode[] ParseMethodBody(Token[] methodBodyTokens)
+    private static SyntaxTreeNode[] ParseInternalScope(Token[] methodBodyTokens)
     {
         List<SyntaxTreeNode> bodyNodes = new List<SyntaxTreeNode>();
         
@@ -139,13 +139,22 @@ internal class SyntaxTreeBuilder(Token[] abstractSyntaxTree)
                 continue;
             }
             
-            int locationOfNextSemicolon = tokenIndex +
+            int indexOfScopeEnding = tokenIndex +
                 methodBodyTokens[tokenIndex..methodBodyTokens.Length]
                     .IndexOf(token => token is { Type: TokenType.SemicolonToken });
-                
-            bodyNodes.Add(ParseExpression(methodBodyTokens[tokenIndex..locationOfNextSemicolon]));
             
-            tokenIndex = locationOfNextSemicolon + 1;
+            if (methodBodyTokens.IndexOf(token => token is { Type: TokenType.OpenScopeToken }) 
+                    is { } openScopeTokenIndex and >= 0
+                && openScopeTokenIndex > tokenIndex
+                && openScopeTokenIndex < indexOfScopeEnding)
+                indexOfScopeEnding = FindIndexOfLastClosingScope(methodBodyTokens, tokenIndex);
+            
+            if (indexOfScopeEnding == -1)
+                indexOfScopeEnding = tokenIndex;
+            
+            bodyNodes.Add(ParseExpression(methodBodyTokens[tokenIndex..(indexOfScopeEnding+1)]));
+            
+            tokenIndex = indexOfScopeEnding + 1;
         }
         
         return bodyNodes
@@ -167,23 +176,44 @@ internal class SyntaxTreeBuilder(Token[] abstractSyntaxTree)
     [Pure]
     private static SyntaxTreeNode ParseExpression(Token[] expressionTokens)
     {
+        if (expressionTokens[^1] is {Type: TokenType.SemicolonToken })
+            expressionTokens = expressionTokens[..^1];
+        
         if (expressionTokens.Length == 1)
             return new SyntaxTreeNode
             {
                 Type = SyntaxTreeNodeType.Literal,
                 Value = expressionTokens[0].Value!
             };
-
+        
+        if (expressionTokens.Length > 1
+            && expressionTokens[0] is { Type: TokenType.ReturnToken })
+            return ParseExpression(expressionTokens[1..]);
+        
         if (expressionTokens[0] is { Type: TokenType.OpenParenthesisToken }
             && Array.FindLastIndex(expressionTokens, token => token is { Type: TokenType.CloseParenthesisToken})
                 is { } closeParenthesisIndex and >= 0)
             return ParseExpression(expressionTokens[1..closeParenthesisIndex]);
 
-        if (expressionTokens.IndexOf(token => token is { Type: TokenType.AssignmentOperatorToken }) is { } assignmentOperatorIndex and > 0
-            && expressionTokens[assignmentOperatorIndex - 1] is { Type: TokenType.NameIdentifierToken} thing)
+        if (expressionTokens[0] is { Type: TokenType.BranchingOperatorToken, Value: "if" }
+            && expressionTokens.IndexOf(token => token is { Type: TokenType.CloseParenthesisToken }) is { } branchCheckParenthesisIndex and > 0)
+        {
             return new SyntaxTreeNode
             {
-                Value = thing.Value!,
+                Type = SyntaxTreeNodeType.Branch,
+                Children =
+                [
+                    ParseExpression(expressionTokens[2..branchCheckParenthesisIndex]),
+                    ..ParseInternalScope(expressionTokens[(branchCheckParenthesisIndex + 2)..])
+                ]
+            };
+        }
+        
+        if (expressionTokens.IndexOf(token => token is { Type: TokenType.AssignmentOperatorToken }) is { } assignmentOperatorIndex and > 0
+            && expressionTokens[assignmentOperatorIndex - 1] is { Type: TokenType.NameIdentifierToken} variableNameToken)
+            return new SyntaxTreeNode
+            {
+                Value = variableNameToken.Value!,
                 Type = SyntaxTreeNodeType.Assignment,
                 Children = [ParseExpression(expressionTokens[(assignmentOperatorIndex+1)..])]
             };
@@ -233,6 +263,6 @@ internal class SyntaxTreeBuilder(Token[] abstractSyntaxTree)
             };
         }
         
-        throw new Exception("Failed to parse expression");
+        throw new Exception($"Failed to parse expression {string.Join(';', expressionTokens.Select(token => token.ToString()))}");
     }
 }
