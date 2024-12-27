@@ -83,9 +83,12 @@ internal class Transpiler(SyntaxTreeNode abstractSyntaxTree)
                 .Select(token => token.Value))
             .AppendLine("]");
 
-        foreach (SyntaxTreeNode child in syntaxTreeNode.Children?
-            .Where(treeNode => treeNode is not { Type: SyntaxTreeNodeType.MethodArgument }) ?? []) 
-            output.Append(ConvertAbstractSyntaxTreeToCode(child));
+        output.AppendJoin(Environment.NewLine, (syntaxTreeNode.Children ?? [])
+            .Where(child => child is not { Type: SyntaxTreeNodeType.MethodArgument })
+            .Select(ConvertAbstractSyntaxTreeToCode));
+        // foreach (SyntaxTreeNode child in syntaxTreeNode.Children?
+        //     .Where(treeNode => treeNode is not { Type: SyntaxTreeNodeType.MethodArgument }) ?? []) 
+        //     output.Append(ConvertAbstractSyntaxTreeToCode(child));
 
         ReadOnlySpan<char> outputCharacters = output.ToString().AsSpan();
         int numberOfMissingParenthesis = outputCharacters.Count('(') - outputCharacters.Count(')');
@@ -131,7 +134,7 @@ internal class Transpiler(SyntaxTreeNode abstractSyntaxTree)
         }
             
         return output
-            .AppendLine("]")
+            .Append("]")
             .ToString();
     }
 
@@ -171,14 +174,14 @@ internal class Transpiler(SyntaxTreeNode abstractSyntaxTree)
         }
         
         if (syntaxTreeNode.Children.Length == indexOffset + 1)
-            output.AppendLine(ConvertAbstractSyntaxTreeToCode(syntaxTreeNode.Children[indexOffset]));
+            output.Append(ConvertAbstractSyntaxTreeToCode(syntaxTreeNode.Children[indexOffset]));
         else
         {
             output
                 .AppendLine("(do ")
                 .AppendJoin(Environment.NewLine, syntaxTreeNode.Children!.Skip(indexOffset)
                     .Select(ConvertAbstractSyntaxTreeToCode))
-                .AppendLine(")");
+                .Append(")");
         }
 
         return output.ToString();

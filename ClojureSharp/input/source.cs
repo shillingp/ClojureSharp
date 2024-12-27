@@ -5,7 +5,9 @@
         int foo = 6;
 
         if (foo == 6)
+        {
             return foo;
+        }
         else
             return 10 + a * b;
     }
