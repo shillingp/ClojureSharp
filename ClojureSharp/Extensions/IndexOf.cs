@@ -15,4 +15,9 @@ public static partial class LinqExtensions
 
         return -1;
     }
+    
+    public static int IndexOf<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate, int startIndex)
+    {
+        return source.Skip(startIndex).IndexOf(predicate);
+    }
 }

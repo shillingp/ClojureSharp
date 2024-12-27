@@ -163,7 +163,7 @@ internal class SyntaxTreeBuilder(Token[] sourceTokens)
             
             if (tokenIndex + methodBodyTokens[tokenIndex..]
                         .IndexOf(token => token is { Type: TokenType.OpenScopeToken }) 
-                    is { } openScopeTokenIndex and >= 0
+                    is { } openScopeTokenIndex
                 && openScopeTokenIndex > tokenIndex
                 && openScopeTokenIndex < indexOfScopeEnding)
                 indexOfScopeEnding = FindIndexOfLastClosingScope(methodBodyTokens, tokenIndex);
@@ -197,6 +197,9 @@ internal class SyntaxTreeBuilder(Token[] sourceTokens)
     {
         ArgumentException.ThrowIfNullOrEmpty("Value cannot be an empty collection.", nameof(expressionTokens));
 
+        if (expressionTokens.Length == 0)
+            ;
+        
         if (expressionTokens[^1] is {Type: TokenType.SemicolonToken })
             expressionTokens = expressionTokens[..^1];
         

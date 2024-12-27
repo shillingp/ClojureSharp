@@ -168,12 +168,8 @@ internal class Transpiler(SyntaxTreeNode abstractSyntaxTree)
                 .Append("(if ")
                 .AppendLine(ConvertAbstractSyntaxTreeToCode(syntaxTreeNode.Children![0]));
         }
-        else
-        {
-            
-        }
         
-        if (syntaxTreeNode.Children.Length == indexOffset + 1)
+        if (syntaxTreeNode.Children!.Length == indexOffset + 1)
             output.Append(ConvertAbstractSyntaxTreeToCode(syntaxTreeNode.Children[indexOffset]));
         else
         {
