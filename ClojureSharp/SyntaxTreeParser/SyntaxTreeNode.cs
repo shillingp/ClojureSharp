@@ -1,10 +1,10 @@
 ﻿namespace ClojureSharp.SyntaxTreeParser;
 
-internal record struct SyntaxTreeNode
+internal readonly record struct SyntaxTreeNode
 {
-    internal string Value;
-    internal SyntaxTreeNodeType Type;
-    internal SyntaxTreeNode[]? Children;
+    internal string Value { get; init; }
+    internal SyntaxTreeNodeType Type { get; init; }
+    internal SyntaxTreeNode[]? Children { get; init; }
 }
 
 internal enum SyntaxTreeNodeType
