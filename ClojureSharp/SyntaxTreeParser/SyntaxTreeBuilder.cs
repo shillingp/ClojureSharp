@@ -98,7 +98,7 @@ internal class SyntaxTreeBuilder(Token[] sourceTokens)
                 openScopeCount++;
             }
             else if (token is { Type: TokenType.CloseScopeToken } && --openScopeCount == 0)
-                return outerScopeTokens[firstOpeningScope!.Value..i];
+                return outerScopeTokens[firstOpeningScope!.Value..(i+1)];
         }
         
         throw new Exception("Failed to find valid scope");
@@ -161,7 +161,8 @@ internal class SyntaxTreeBuilder(Token[] sourceTokens)
                 methodBodyTokens[tokenIndex..methodBodyTokens.Length]
                     .IndexOf(token => token is { Type: TokenType.SemicolonToken });
             
-            if (methodBodyTokens.IndexOf(token => token is { Type: TokenType.OpenScopeToken }) 
+            if (tokenIndex + methodBodyTokens[tokenIndex..]
+                        .IndexOf(token => token is { Type: TokenType.OpenScopeToken }) 
                     is { } openScopeTokenIndex and >= 0
                 && openScopeTokenIndex > tokenIndex
                 && openScopeTokenIndex < indexOfScopeEnding)
@@ -234,11 +235,9 @@ internal class SyntaxTreeBuilder(Token[] sourceTokens)
         {
             return new SyntaxTreeNode
             {
+                Value = expressionTokens[0].Value!,
                 Type = SyntaxTreeNodeType.Branch,
-                Children =
-                [
-                    ParseExpression(expressionTokens[1..]),
-                ]
+                Children = ParseInternalScope(expressionTokens[2..])
             };
         }
         

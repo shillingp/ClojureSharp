@@ -161,12 +161,16 @@ internal class Transpiler(SyntaxTreeNode abstractSyntaxTree)
         StringBuilder output = new StringBuilder();
         int indexOffset = 0;
         
-        if (syntaxTreeNode.Children![0] is { Type: SyntaxTreeNodeType.EqualityCheck })
+        if (syntaxTreeNode is { Type: SyntaxTreeNodeType.Branch, Value: "if" })
         {
             indexOffset = 1;
             output
                 .Append("(if ")
                 .AppendLine(ConvertAbstractSyntaxTreeToCode(syntaxTreeNode.Children![0]));
+        }
+        else
+        {
+            
         }
         
         if (syntaxTreeNode.Children.Length == indexOffset + 1)

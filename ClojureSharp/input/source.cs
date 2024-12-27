@@ -6,11 +6,12 @@
 
         if (foo == 6)
         {
-            foo = 10;
             return foo;
         }
         else
+        {
             return 10 + a * b;
+        }
     }
 
     int thing(int a)
