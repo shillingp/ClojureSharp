@@ -21,6 +21,19 @@ internal class Tokenizer(string sourceCode)
                 continue;
             }
 
+            if (Peek(1) is '/' && Peek(2) is '/')
+            {
+                StringBuilder commentBuilder = new StringBuilder();
+                while (Peek() is { } commentCharacter and not ('\r' or '\n'))
+                {
+                    commentBuilder.Append(commentCharacter);
+                    Consume();
+                }
+
+                tokenBuffer.Enqueue(new Token(TokenType.CommentToken, commentBuilder.ToString()[2..]));
+                continue;
+            }
+            
             if (char.IsLetterOrDigit(character))
             {
                 string parsedIdentifier = char.IsLetter(character)

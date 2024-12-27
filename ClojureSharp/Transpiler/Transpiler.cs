@@ -32,6 +32,7 @@ internal class Transpiler(SyntaxTreeNode abstractSyntaxTree)
             SyntaxTreeNodeType.Literal => ConvertLiteralSyntaxTreeNodeToCode(syntaxTreeNode),
             SyntaxTreeNodeType.Branch => ConvertBranchSyntaxTreeNodeToCode(syntaxTreeNode),
             SyntaxTreeNodeType.Class => ConvertClassSyntaxTreeNodeToCode(syntaxTreeNode),
+            SyntaxTreeNodeType.Comment => ConvertCommentSyntaxTreeNodeToCode(syntaxTreeNode),
             _ => throw new Exception($"Unable to convert abstract syntax tree node {syntaxTreeNode.Type} to code"),
         };
     }
@@ -187,5 +188,11 @@ internal class Transpiler(SyntaxTreeNode abstractSyntaxTree)
             output.Append(')', numberOfMissingParenthesis - 1);
         
         return output.ToString();
+    }
+
+    [Pure]
+    private static string ConvertCommentSyntaxTreeNodeToCode(SyntaxTreeNode syntaxTreeNode)
+    {
+        return syntaxTreeNode.Value.Insert(0, ";;");
     }
 }

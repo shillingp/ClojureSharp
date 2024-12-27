@@ -4,10 +4,7 @@
     {
         int foo = 6;
 
-        foo += 1;
-        foo -= 2;
-        foo *= 2;
-        foo /= 2;
+        // hello world
         
         return 10 + foo + a * b;
     }

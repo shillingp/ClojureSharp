@@ -51,5 +51,7 @@ internal enum TokenType
     AssignmentOperatorToken,
     EqualityOperatorToken,
     
-    BranchingOperatorToken
+    BranchingOperatorToken,
+    
+    CommentToken
 }

@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics.Contracts;
 using ClojureSharp.Tokenizer;
 using ClojureSharp.Extensions;
+using ClojureSharp.Extensions.Array;
 
 namespace ClojureSharp.SyntaxTreeParser;
 
@@ -153,6 +154,18 @@ internal class SyntaxTreeBuilder(Token[] sourceTokens)
         {
             if (methodBodyTokens[tokenIndex] is { Type: TokenType.ReturnToken or TokenType.CloseScopeToken })
             {
+                tokenIndex++;
+                continue;
+            }
+            
+            if (methodBodyTokens[tokenIndex] is { Type: TokenType.CommentToken })
+            {
+                bodyNodes.Add(new SyntaxTreeNode
+                {
+                    Value = methodBodyTokens[tokenIndex].Value!,
+                    Type = SyntaxTreeNodeType.Comment,
+                });
+                
                 tokenIndex++;
                 continue;
             }

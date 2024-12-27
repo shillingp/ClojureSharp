@@ -1,6 +1,6 @@
 ﻿namespace ClojureSharp.Extensions;
 
-public static partial class LinqExtensions
+public static partial class EnumerableExtensions
 {
     /// <summary>
     /// Groups sequential numbers using provided <see cref="Func{T1, T2, TResult}"/>
