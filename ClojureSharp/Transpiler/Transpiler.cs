@@ -4,10 +4,10 @@ using ClojureSharp.SyntaxTreeParser;
 
 namespace ClojureSharp.Transpiler;
 
-internal class Transpiler(SyntaxTreeNode abstractSyntaxTree)
+internal static class Transpiler
 {
     [Pure]
-    internal string Transpile()
+    internal static string Transpile(SyntaxTreeNode abstractSyntaxTree)
     {
         StringBuilder output = new StringBuilder();
         

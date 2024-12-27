@@ -5,9 +5,10 @@ using ClojureSharp.Extensions.Array;
 
 namespace ClojureSharp.SyntaxTreeParser;
 
-internal class SyntaxTreeBuilder(Token[] sourceTokens)
+internal static class SyntaxTreeBuilder
 {
-    internal SyntaxTreeNode Parse()
+    [Pure]
+    internal static SyntaxTreeNode Parse(Token[] sourceTokens)
     { 
         int currentIndex = 0;
         

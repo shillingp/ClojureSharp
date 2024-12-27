@@ -21,7 +21,7 @@ internal class Tokenizer(string sourceCode)
                 continue;
             }
 
-            if (Peek(1) is '/' && Peek(2) is '/')
+            if (Peek() is '/' && Peek(2) is '/')
             {
                 StringBuilder commentBuilder = new StringBuilder();
                 while (Peek() is { } commentCharacter and not ('\r' or '\n'))
