@@ -1,10 +1,5 @@
 ﻿namespace TestNamespace
 {
-    class Thing
-    {
-        int Item = 0;
-    }
-    
     int ExampleMethod(int a, int b)
     {
         int foo = 6;

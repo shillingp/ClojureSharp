@@ -13,4 +13,7 @@ SyntaxTreeNode abstractSyntaxTree = syntaxTreeBuilder.Parse();
 Transpiler transpiler = new Transpiler(abstractSyntaxTree);
 string transpiledCode = transpiler.Transpile();
 
-await File.WriteAllTextAsync("../../../output/source.clj", transpiledCode);
+Prettifier prettifier = new Prettifier(' ', 4);
+string prettyTranspiledCode = prettifier.Prettify(transpiledCode);
+
+await File.WriteAllTextAsync("../../../output/source.clj", prettyTranspiledCode);

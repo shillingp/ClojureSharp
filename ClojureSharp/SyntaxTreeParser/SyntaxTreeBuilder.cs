@@ -15,7 +15,7 @@ internal class SyntaxTreeBuilder(Token[] sourceTokens)
             throw new Exception("Namespace not found");
         
         List<SyntaxTreeNode> namespaceNodes = new List<SyntaxTreeNode>();
-            
+        
         while (currentIndex < sourceTokens.Length)
         {
             if (sourceTokens[currentIndex] is { Type: TokenType.TypeDeclarationToken }
@@ -25,6 +25,20 @@ internal class SyntaxTreeBuilder(Token[] sourceTokens)
                 namespaceNodes.Add(ParseMethod(sourceTokens[currentIndex..]));
                 
                 currentIndex = FindIndexOfLastClosingScope(sourceTokens, currentIndex);
+            }
+            else if (sourceTokens[currentIndex] is { Type: TokenType.ClassToken }
+                && sourceTokens[currentIndex + 1] is { Type: TokenType.NameIdentifierToken })
+            {
+                int endIndex = FindIndexOfLastClosingScope(sourceTokens, currentIndex);
+                
+                namespaceNodes.Add(new SyntaxTreeNode
+                {
+                    Value = sourceTokens[currentIndex+1].Value!,
+                    Type = SyntaxTreeNodeType.Class,
+                    Children = ParseInternalScope(sourceTokens[(currentIndex+2)..endIndex]),
+                });
+                
+                currentIndex = endIndex;
             }
             else if (sourceTokens[currentIndex] is { Type: TokenType.NameIdentifierToken }
                 && sourceTokens[currentIndex + 1] is { Type: TokenType.OpenParenthesisToken })

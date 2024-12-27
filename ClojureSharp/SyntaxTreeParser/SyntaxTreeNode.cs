@@ -10,6 +10,7 @@ internal record struct SyntaxTreeNode
 internal enum SyntaxTreeNodeType
 {
     Namespace,
+    Class,
     Method,
     MethodArgument,
     Literal,

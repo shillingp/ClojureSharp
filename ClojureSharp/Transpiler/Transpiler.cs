@@ -30,7 +30,8 @@ internal class Transpiler(SyntaxTreeNode abstractSyntaxTree)
             SyntaxTreeNodeType.Assignment => ConvertAssignmentSyntaxTreeNodeToCode(syntaxTreeNode),
             SyntaxTreeNodeType.EqualityCheck => ConvertEqualityCheckSyntaxTreeNodeToCode(syntaxTreeNode),
             SyntaxTreeNodeType.Literal => ConvertLiteralSyntaxTreeNodeToCode(syntaxTreeNode),
-            SyntaxTreeNodeType.Branch => ConvertBranchSyntaxTreeToCode(syntaxTreeNode),
+            SyntaxTreeNodeType.Branch => ConvertBranchSyntaxTreeNodeToCode(syntaxTreeNode),
+            SyntaxTreeNodeType.Class => ConvertClassSyntaxTreeNodeToCode(syntaxTreeNode),
             _ => throw new Exception($"Unable to convert abstract syntax tree node {syntaxTreeNode.Type} to code"),
         };
     }
@@ -40,6 +41,32 @@ internal class Transpiler(SyntaxTreeNode abstractSyntaxTree)
     {
         return new StringBuilder()
             .AppendLine($"(ns {syntaxTreeNode.Value})")
+            .AppendLine()
+            .ToString();
+    }
+    
+    [Pure]
+    private static string ConvertClassSyntaxTreeNodeToCode(SyntaxTreeNode syntaxTreeNode)
+    {
+        throw new Exception("Classes are not supported");
+        
+        return new StringBuilder(
+                $"""
+                (gen-class
+                   :name com.example.Demo
+                   :state state
+                   :init init
+                   :prefix "{syntaxTreeNode.Value}-"
+                   :main false)
+                """)
+            .AppendLine()
+            .AppendLine($"(defn {syntaxTreeNode.Value}-init []")
+            .Append("    [[] (atom {")
+            .AppendJoin(' ', (syntaxTreeNode.Children ?? [])
+                .Where(child => child is { Type: SyntaxTreeNodeType.Assignment })
+                .Select(child => $":{child.Value} {ConvertAbstractSyntaxTreeToCode(child.Children![0])}"))
+            .Append("})])")
+            .AppendLine()
             .AppendLine()
             .ToString();
     }
@@ -60,8 +87,12 @@ internal class Transpiler(SyntaxTreeNode abstractSyntaxTree)
             .Where(treeNode => treeNode is not { Type: SyntaxTreeNodeType.MethodArgument }) ?? []) 
             output.Append(ConvertAbstractSyntaxTreeToCode(child));
 
+        ReadOnlySpan<char> outputCharacters = output.ToString().AsSpan();
+        int numberOfMissingParenthesis = outputCharacters.Count('(') - outputCharacters.Count(')');
+        
         return output
-            .AppendLine(")")
+            .Append(')', numberOfMissingParenthesis)
+            .AppendLine()
             .AppendLine()
             .ToString();
     }
@@ -126,7 +157,7 @@ internal class Transpiler(SyntaxTreeNode abstractSyntaxTree)
     }
 
     [Pure]
-    private static string ConvertBranchSyntaxTreeToCode(SyntaxTreeNode syntaxTreeNode)
+    private static string ConvertBranchSyntaxTreeNodeToCode(SyntaxTreeNode syntaxTreeNode)
     {
         StringBuilder output = new StringBuilder();
         int indexOffset = 0;
