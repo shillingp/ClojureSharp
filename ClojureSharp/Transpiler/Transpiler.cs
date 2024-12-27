@@ -129,16 +129,14 @@ internal class Transpiler(SyntaxTreeNode abstractSyntaxTree)
     private static string ConvertBranchSyntaxTreeToCode(SyntaxTreeNode syntaxTreeNode)
     {
         StringBuilder output = new StringBuilder();
-        int indexOffset = 1;
+        int indexOffset = 0;
         
         if (syntaxTreeNode.Children![0] is { Type: SyntaxTreeNodeType.EqualityCheck })
         {
-            output.Append("(if ");
-            output.AppendLine(ConvertAbstractSyntaxTreeToCode(syntaxTreeNode.Children![0]));
-        }
-        else
-        {
-            indexOffset = 0;
+            indexOffset = 1;
+            output
+                .Append("(if ")
+                .AppendLine(ConvertAbstractSyntaxTreeToCode(syntaxTreeNode.Children![0]));
         }
         
         if (syntaxTreeNode.Children.Length == indexOffset + 1)

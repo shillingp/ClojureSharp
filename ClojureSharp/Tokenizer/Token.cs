@@ -1,9 +1,9 @@
 ﻿namespace ClojureSharp.Tokenizer;
 
-internal record struct Token
+internal readonly record struct Token
 {
-    internal TokenType Type;
-    internal string? Value;
+    internal readonly TokenType Type;
+    internal readonly string? Value;
 
     internal Token(TokenType tokenType)
     {
@@ -25,6 +25,7 @@ internal record struct Token
 internal enum TokenType
 {
     NamespaceToken,
+    ClassToken,
     
     TypeDeclarationToken,
     NameIdentifierToken,

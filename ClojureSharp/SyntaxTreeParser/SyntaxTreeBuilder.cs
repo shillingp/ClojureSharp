@@ -70,7 +70,7 @@ internal class SyntaxTreeBuilder(Token[] sourceTokens)
     }
 
     [Pure]
-    private static Token[] RetrieveAllTokensInInnerScope(Token[] outerScopeTokens)
+    private static Token[] RetrieveAllTokensInInnerScope(params Token[] outerScopeTokens)
     {
         uint openScopeCount = 0;
         int? firstOpeningScope = null;
@@ -91,7 +91,7 @@ internal class SyntaxTreeBuilder(Token[] sourceTokens)
     }
 
     [Pure]
-    private static SyntaxTreeNode ParseMethod(Token[] methodTokens)
+    private static SyntaxTreeNode ParseMethod(params Token[] methodTokens)
     {
         Token[] methodArgumentTokens = methodTokens
             .SkipWhile(token => token.Type is not TokenType.OpenParenthesisToken)
@@ -113,8 +113,10 @@ internal class SyntaxTreeBuilder(Token[] sourceTokens)
     }
     
     [Pure]
-    private static IEnumerable<SyntaxTreeNode> ParseMethodArguments(Token[] methodArgumentTokens)
+    private static IEnumerable<SyntaxTreeNode> ParseMethodArguments(params Token[] methodArgumentTokens)
     {
+        ArgumentException.ThrowIfNullOrEmpty("Value cannot be an empty collection.", nameof(methodArgumentTokens));
+        
         for (int i = 0; i < methodArgumentTokens.Length; i += 3)
         {
             yield return new SyntaxTreeNode
@@ -126,8 +128,10 @@ internal class SyntaxTreeBuilder(Token[] sourceTokens)
     }
 
     [Pure]
-    private static SyntaxTreeNode[] ParseInternalScope(Token[] methodBodyTokens)
+    private static SyntaxTreeNode[] ParseInternalScope(params Token[] methodBodyTokens)
     {
+        ArgumentException.ThrowIfNullOrEmpty("Value cannot be an empty collection.", nameof(methodBodyTokens));
+        
         List<SyntaxTreeNode> bodyNodes = new List<SyntaxTreeNode>();
         
         int tokenIndex = 0;
@@ -174,11 +178,10 @@ internal class SyntaxTreeBuilder(Token[] sourceTokens)
     }
 
     [Pure]
-    private static SyntaxTreeNode ParseExpression(Token[] expressionTokens)
+    private static SyntaxTreeNode ParseExpression(params Token[] expressionTokens)
     {
-        if (expressionTokens.Length == 0)
-            throw new Exception("No tokens to parse");
-        
+        ArgumentException.ThrowIfNullOrEmpty("Value cannot be an empty collection.", nameof(expressionTokens));
+
         if (expressionTokens[^1] is {Type: TokenType.SemicolonToken })
             expressionTokens = expressionTokens[..^1];
         
@@ -203,6 +206,7 @@ internal class SyntaxTreeBuilder(Token[] sourceTokens)
         {
             return new SyntaxTreeNode
             {
+                Value = expressionTokens[0].Value!,
                 Type = SyntaxTreeNodeType.Branch,
                 Children =
                 [

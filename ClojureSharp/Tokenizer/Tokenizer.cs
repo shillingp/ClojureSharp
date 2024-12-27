@@ -30,7 +30,9 @@ internal class Tokenizer(string sourceCode)
                 tokenBuffer.Enqueue(parsedIdentifier switch
                 {
                     "namespace"
-                        => new Token(TokenType.NamespaceToken, parsedIdentifier),
+                        => new Token(TokenType.NamespaceToken),
+                    "class"
+                        => new Token(TokenType.ClassToken),
                     "int" or "double" or "string" or "bool"
                         => new Token(TokenType.TypeDeclarationToken, parsedIdentifier),
                     "true" or "false" 
