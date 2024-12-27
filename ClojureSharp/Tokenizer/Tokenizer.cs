@@ -1,36 +1,20 @@
-﻿using System.Diagnostics.Contracts;
-using System.Text;
+﻿using System.Text;
 
 namespace ClojureSharp.Tokenizer;
 
 internal class Tokenizer(string sourceCode)
 {
-    private int _currentIndex;
+    private readonly Queue<char> _sourceCode = new Queue<char>(sourceCode);
     
     internal Token[] Tokenize()
     {
         Queue<Token> tokenBuffer = new Queue<Token>();
         
-        _currentIndex = -1;
-        
-        while (Peek() is { } character)
+        while (_sourceCode.TryPeek(out char character))
         {
             if (char.IsWhiteSpace(character))
             {
-                Consume();
-                continue;
-            }
-
-            if (Peek() is '/' && Peek(2) is '/')
-            {
-                StringBuilder commentBuilder = new StringBuilder();
-                while (Peek() is { } commentCharacter and not ('\r' or '\n'))
-                {
-                    commentBuilder.Append(commentCharacter);
-                    Consume();
-                }
-
-                tokenBuffer.Enqueue(new Token(TokenType.CommentToken, commentBuilder.ToString()[2..]));
+                _sourceCode.Dequeue();
                 continue;
             }
             
@@ -66,11 +50,13 @@ internal class Tokenizer(string sourceCode)
 
             if (char.IsSymbol(character) || char.IsPunctuation(character))
             {
-                int peekCounter = 1;
-                string parsedSymbolSequence = "";
-                while (Peek(peekCounter++) is { } peekedSymbol && (char.IsSymbol(peekedSymbol) || char.IsPunctuation(peekedSymbol)))
-                    parsedSymbolSequence += peekedSymbol;
-
+                StringBuilder parsedSymbolSequenceBuilder = new StringBuilder();
+                int peekCounter = 0;
+                while (_sourceCode.ElementAtOrDefault(peekCounter++) is { } peekedSymbol 
+                    && (char.IsSymbol(peekedSymbol) || char.IsPunctuation(peekedSymbol)))
+                    parsedSymbolSequenceBuilder.Append(peekedSymbol);
+                string parsedSymbolSequence = parsedSymbolSequenceBuilder.ToString();
+                
                 Token? matchingToken = parsedSymbolSequence switch
                 {
                     "==" 
@@ -86,7 +72,8 @@ internal class Tokenizer(string sourceCode)
                 if (matchingToken is not null)
                 {
                     tokenBuffer.Enqueue(matchingToken.Value);
-                    Consume(parsedSymbolSequence.Length);
+                    for (int i = parsedSymbolSequence.Length - 1; i >= 0; i--)
+                        _sourceCode.Dequeue();
                     continue;
                 }
                 
@@ -106,7 +93,7 @@ internal class Tokenizer(string sourceCode)
                     _ => throw new FormatException($"Unrecognized character '{character}'.")
                 });
 
-                Consume();
+                _sourceCode.Dequeue();
                 continue;
             }
             
@@ -120,11 +107,8 @@ internal class Tokenizer(string sourceCode)
     {
         StringBuilder parsedCharacters = new StringBuilder();
 
-        while (Peek() is { } character && char.IsLetterOrDigit(character))
-        {
-            parsedCharacters.Append(character);
-            Consume();
-        }
+        while (_sourceCode.TryPeek(out char character) && char.IsLetterOrDigit(character))
+            parsedCharacters.Append(_sourceCode.Dequeue());
 
         return parsedCharacters.ToString();
     }
@@ -133,33 +117,12 @@ internal class Tokenizer(string sourceCode)
     {
         StringBuilder parsedCharacters = new StringBuilder();
 
-        while (Peek() is { } character && (char.IsDigit(character) || character is '.' or 'f' or 'd'))
-        {
-            parsedCharacters.Append(character);
-            Consume();
-        }
+        while (_sourceCode.TryPeek(out char character) && (char.IsDigit(character) || character is '.' or 'f' or 'd'))
+            parsedCharacters.Append(_sourceCode.Dequeue());
         
         return parsedCharacters
             .Replace("f", "")
             .Replace("d", "")
             .ToString();
-    }
-    
-    [Pure]
-    private char? Peek(int count = 1)
-    {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(count);
-
-        if (_currentIndex + count >= sourceCode.Length)
-            return null;
-
-        return sourceCode.AsSpan()[_currentIndex + count];
-    }
-
-    private void Consume(int count = 1)
-    {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(count);
-
-        _currentIndex += count;
     }
 }

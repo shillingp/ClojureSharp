@@ -3,8 +3,6 @@
     int ExampleMethod(int a, int b)
     {
         int foo = 6;
-
-        // hello world
         
         return 10 + foo + a * b;
     }
