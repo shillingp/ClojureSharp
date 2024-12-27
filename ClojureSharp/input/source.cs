@@ -6,6 +6,7 @@
 
         if (foo == 6)
         {
+            foo = 10;
             return foo;
         }
         else

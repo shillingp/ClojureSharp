@@ -86,9 +86,6 @@ internal class Transpiler(SyntaxTreeNode abstractSyntaxTree)
         output.AppendJoin(Environment.NewLine, (syntaxTreeNode.Children ?? [])
             .Where(child => child is not { Type: SyntaxTreeNodeType.MethodArgument })
             .Select(ConvertAbstractSyntaxTreeToCode));
-        // foreach (SyntaxTreeNode child in syntaxTreeNode.Children?
-        //     .Where(treeNode => treeNode is not { Type: SyntaxTreeNodeType.MethodArgument }) ?? []) 
-        //     output.Append(ConvertAbstractSyntaxTreeToCode(child));
 
         ReadOnlySpan<char> outputCharacters = output.ToString().AsSpan();
         int numberOfMissingParenthesis = outputCharacters.Count('(') - outputCharacters.Count(')');
