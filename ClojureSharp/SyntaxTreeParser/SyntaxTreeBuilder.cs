@@ -128,18 +128,23 @@ internal class SyntaxTreeBuilder(Token[] sourceTokens)
     }
     
     [Pure]
-    private static IEnumerable<SyntaxTreeNode> ParseMethodArguments(params Token[] methodArgumentTokens)
+    private static SyntaxTreeNode[] ParseMethodArguments(params Token[] methodArgumentTokens)
     {
         ArgumentException.ThrowIfNullOrEmpty("Value cannot be an empty collection.", nameof(methodArgumentTokens));
         
-        for (int i = 0; i < methodArgumentTokens.Length; i += 3)
+        SyntaxTreeNode[] argumentSyntaxTreeNodes = new SyntaxTreeNode[methodArgumentTokens.Length / 2];
+
+        int syntaxNodeCounter = 0;
+        for (int i = 1; i < methodArgumentTokens.Length; i += 3)
         {
-            yield return new SyntaxTreeNode
+            argumentSyntaxTreeNodes[syntaxNodeCounter++] = new SyntaxTreeNode
             {
-                Value = methodArgumentTokens[i + 1].Value!,
+                Value = methodArgumentTokens[i].Value!,
                 Type = SyntaxTreeNodeType.MethodArgument
             };
         }
+
+        return argumentSyntaxTreeNodes;
     }
 
     [Pure]
