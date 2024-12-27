@@ -81,11 +81,10 @@ internal class Transpiler(SyntaxTreeNode abstractSyntaxTree)
             .AppendJoin(' ', (syntaxTreeNode.Children?
                     .Where(token => token is { Type: SyntaxTreeNodeType.MethodArgument }) ?? [])
                 .Select(token => token.Value))
-            .AppendLine("]");
-
-        output.AppendJoin(Environment.NewLine, (syntaxTreeNode.Children ?? [])
-            .Where(child => child is not { Type: SyntaxTreeNodeType.MethodArgument })
-            .Select(ConvertAbstractSyntaxTreeToCode));
+            .AppendLine("]")
+            .AppendJoin(Environment.NewLine, (syntaxTreeNode.Children ?? [])
+                    .Where(child => child is not { Type: SyntaxTreeNodeType.MethodArgument })
+                .Select(ConvertAbstractSyntaxTreeToCode));
 
         ReadOnlySpan<char> outputCharacters = output.ToString().AsSpan();
         int numberOfMissingParenthesis = outputCharacters.Count('(') - outputCharacters.Count(')');
@@ -181,6 +180,12 @@ internal class Transpiler(SyntaxTreeNode abstractSyntaxTree)
                 .Append(")");
         }
 
+        ReadOnlySpan<char> outputCharacters = output.ToString().AsSpan();
+        int numberOfMissingParenthesis = outputCharacters.Count('(') - outputCharacters.Count(')');
+
+        if (numberOfMissingParenthesis - 1 >= 0)
+            output.Append(')', numberOfMissingParenthesis - 1);
+        
         return output.ToString();
     }
 }
