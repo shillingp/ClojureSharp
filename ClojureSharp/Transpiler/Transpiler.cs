@@ -118,7 +118,7 @@ internal class Transpiler(SyntaxTreeNode abstractSyntaxTree)
         if (syntaxTreeNode.Children?.Any(child => child is { Type: SyntaxTreeNodeType.Assignment}) ?? false)
         {
             output
-                .AppendJoin(Environment.NewLine, syntaxTreeNode.Children
+                .AppendJoin(Environment.NewLine + "  ", syntaxTreeNode.Children
                     .Select(child => child.Value + " " + ConvertAbstractSyntaxTreeToCode(child.Children![0])));
         }
         else

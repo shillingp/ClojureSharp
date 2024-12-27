@@ -196,9 +196,6 @@ internal class SyntaxTreeBuilder(Token[] sourceTokens)
     private static SyntaxTreeNode ParseExpression(params Token[] expressionTokens)
     {
         ArgumentException.ThrowIfNullOrEmpty("Value cannot be an empty collection.", nameof(expressionTokens));
-
-        if (expressionTokens.Length == 0)
-            ;
         
         if (expressionTokens[^1] is {Type: TokenType.SemicolonToken })
             expressionTokens = expressionTokens[..^1];
@@ -250,7 +247,17 @@ internal class SyntaxTreeBuilder(Token[] sourceTokens)
             {
                 Value = variableNameToken.Value!,
                 Type = SyntaxTreeNodeType.Assignment,
-                Children = [ParseExpression(expressionTokens[(assignmentOperatorIndex+1)..])]
+                Children = expressionTokens[assignmentOperatorIndex] is { Value: null }
+                    ? [ParseExpression(expressionTokens[(assignmentOperatorIndex+1)..])]
+                    : [new SyntaxTreeNode
+                    {
+                        Value = expressionTokens[assignmentOperatorIndex].Value![0].ToString(),
+                        Type = SyntaxTreeNodeType.Expression,
+                        Children = [
+                            ParseExpression(expressionTokens[assignmentOperatorIndex-1]),
+                            ParseExpression(expressionTokens[(assignmentOperatorIndex+1)..])
+                        ]
+                    }]
             };
         
         if (expressionTokens[0] is { Type: TokenType.NameIdentifierToken}
