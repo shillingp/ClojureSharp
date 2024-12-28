@@ -23,7 +23,7 @@ internal enum SyntaxTreeNodeType
     MethodArgument,
     Literal,
     Expression,
-    Invocation,
+    // Invocation,
     Assignment,
     EqualityCheck,
     Branch,

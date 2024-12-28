@@ -324,29 +324,29 @@ internal static class SyntaxTreeBuilder
             };
         }
 
-        if (expressionTokens[0] is { Type: TokenType.InvocationToken }
-            && expressionTokens[1] is not { Type: TokenType.CollectionDeclarationToken })
-        {
-            return new SyntaxTreeNode
-            {
-                Value = expressionTokens[1].Value!,
-                Type = SyntaxTreeNodeType.Invocation,
-                Children = expressionTokens[3..^1] is { Length: > 0 }
-                    ? [ParseExpression(expressionTokens[3..^1])]
-                    : []
-            };
-        }
-
-        if (expressionTokens[0] is { Type: TokenType.InvocationToken })
-        {
-            return new SyntaxTreeNode
-            {
-                Value = "[" + string.Join(' ', expressionTokens[3..^1]
-                    .Where(token => token is not { Type: TokenType.CommaToken })
-                    .Select(child => child.Value)) + "]",
-                Type = SyntaxTreeNodeType.Literal,
-            };
-        }
+        // if (expressionTokens[0] is { Type: TokenType.InvocationToken }
+        //     && expressionTokens[1] is not { Type: TokenType.CollectionDeclarationToken })
+        // {
+        //     return new SyntaxTreeNode
+        //     {
+        //         Value = expressionTokens[1].Value!,
+        //         Type = SyntaxTreeNodeType.Invocation,
+        //         Children = expressionTokens[3..^1] is { Length: > 0 }
+        //             ? [ParseExpression(expressionTokens[3..^1])]
+        //             : []
+        //     };
+        // }
+        //
+        // if (expressionTokens[0] is { Type: TokenType.InvocationToken })
+        // {
+        //     return new SyntaxTreeNode
+        //     {
+        //         Value = "[" + string.Join(' ', expressionTokens[3..^1]
+        //             .Where(token => token is not { Type: TokenType.CommaToken })
+        //             .Select(child => child.Value)) + "]",
+        //         Type = SyntaxTreeNodeType.Literal,
+        //     };
+        // }
         
         throw new Exception($"Failed to parse expression {string.Join(';', expressionTokens.Select(token => token.ToString()))}");
     }

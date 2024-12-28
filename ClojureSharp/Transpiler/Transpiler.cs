@@ -33,7 +33,7 @@ internal static class Transpiler
             SyntaxTreeNodeType.Branch => ConvertBranchSyntaxTreeNodeToCode(syntaxTreeNode),
             SyntaxTreeNodeType.Class => ConvertClassSyntaxTreeNodeToCode(syntaxTreeNode),
             SyntaxTreeNodeType.Comment => ConvertCommentSyntaxTreeNodeToCode(syntaxTreeNode),
-            SyntaxTreeNodeType.Invocation => ConvertInvocationSyntaxTreeNodeToCode(syntaxTreeNode),
+            // SyntaxTreeNodeType.Invocation => ConvertInvocationSyntaxTreeNodeToCode(syntaxTreeNode),
             _ => throw new Exception($"Unable to convert abstract syntax tree node {syntaxTreeNode.Type} to code"),
         };
     }

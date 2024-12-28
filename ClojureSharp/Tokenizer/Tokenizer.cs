@@ -43,12 +43,12 @@ internal class Tokenizer(string sourceCode)
                         => new Token(TokenType.NamespaceToken),
                     "class"
                         => new Token(TokenType.ClassToken),
-                    "new"
-                        => new Token(TokenType.InvocationToken),
+                    // "new"
+                    //     => new Token(TokenType.InvocationToken),
                     "var" or "int" or "double" or "string" or "bool"
                         => new Token(TokenType.TypeDeclarationToken, parsedIdentifier),
-                    _ when IsGenericType(parsedIdentifier)
-                        => new Token(TokenType.CollectionDeclarationToken, parsedIdentifier),
+                    // _ when IsGenericType(parsedIdentifier)
+                    //     => new Token(TokenType.CollectionDeclarationToken, parsedIdentifier),
                     "true" or "false" 
                         => new Token(TokenType.BooleanLiteralToken, parsedIdentifier),
                     "null"
