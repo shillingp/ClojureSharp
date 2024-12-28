@@ -2,13 +2,10 @@
 {
     int ExampleMethod(int a, int b)
     {
-        // int foo = 6;
-        // return 10 + foo + a * b;
-
-        // List<int> thing = new List<int>(1, 2, 3);
-        // thing.Add(1);
-
-        return thing;
+        List<int> stuff = [1, (1 + 1), 3];
+        stuff.AddRange(4, 5);
+        
+        return stuff;
     }
 
     int thing(int a)

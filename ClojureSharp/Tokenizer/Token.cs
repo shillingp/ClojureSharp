@@ -28,10 +28,8 @@ internal enum TokenType
     ClassToken,
     
     TypeDeclarationToken,
-    CollectionDeclarationToken,
     NameIdentifierToken,
     
-    InvocationToken,
     DotMethodToken,
     
     OpenParenthesisToken,
@@ -39,6 +37,9 @@ internal enum TokenType
     
     OpenScopeToken,
     CloseScopeToken,
+    
+    OpenCollectionToken,
+    CloseCollectionToken,
     
     SemicolonToken,
     CommaToken,
@@ -57,5 +58,5 @@ internal enum TokenType
     
     BranchingOperatorToken,
     
-    CommentToken
+    CommentToken,
 }

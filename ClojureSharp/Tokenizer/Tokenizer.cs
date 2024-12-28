@@ -43,12 +43,10 @@ internal class Tokenizer(string sourceCode)
                         => new Token(TokenType.NamespaceToken),
                     "class"
                         => new Token(TokenType.ClassToken),
-                    // "new"
-                    //     => new Token(TokenType.InvocationToken),
                     "var" or "int" or "double" or "string" or "bool"
                         => new Token(TokenType.TypeDeclarationToken, parsedIdentifier),
-                    // _ when IsGenericType(parsedIdentifier)
-                    //     => new Token(TokenType.CollectionDeclarationToken, parsedIdentifier),
+                    _ when IsGenericType(parsedIdentifier)
+                        => new Token(TokenType.TypeDeclarationToken, parsedIdentifier),
                     "true" or "false" 
                         => new Token(TokenType.BooleanLiteralToken, parsedIdentifier),
                     "null"
@@ -101,6 +99,8 @@ internal class Tokenizer(string sourceCode)
                     ')' => new Token(TokenType.CloseParenthesisToken),
                     '{' => new Token(TokenType.OpenScopeToken),
                     '}' => new Token(TokenType.CloseScopeToken),
+                    '[' => new Token(TokenType.OpenCollectionToken),
+                    ']' => new Token(TokenType.CloseCollectionToken),
                     ';' => new Token(TokenType.SemicolonToken),
                     '+' or '-' or '*' or '/' or '%'
                         => new Token(TokenType.NumericOperationToken, character.ToString()),
@@ -124,9 +124,11 @@ internal class Tokenizer(string sourceCode)
     [Pure]
     private static bool IsGenericType(string textValue)
     {
-        return textValue.StartsWith("List") 
-            || textValue.StartsWith("Array")
-            || textValue.StartsWith("Queue");
+        int genericTypeOpenBracket = textValue.IndexOf('<');
+        int genericTypeCloseBracket = textValue.IndexOf('>');
+        return genericTypeOpenBracket is not -1
+            && genericTypeCloseBracket is not -1
+            && genericTypeOpenBracket + 1 != genericTypeCloseBracket;
     }
 
     private string ParseIdentifier()

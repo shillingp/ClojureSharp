@@ -33,7 +33,7 @@ internal static class Transpiler
             SyntaxTreeNodeType.Branch => ConvertBranchSyntaxTreeNodeToCode(syntaxTreeNode),
             SyntaxTreeNodeType.Class => ConvertClassSyntaxTreeNodeToCode(syntaxTreeNode),
             SyntaxTreeNodeType.Comment => ConvertCommentSyntaxTreeNodeToCode(syntaxTreeNode),
-            // SyntaxTreeNodeType.Invocation => ConvertInvocationSyntaxTreeNodeToCode(syntaxTreeNode),
+            SyntaxTreeNodeType.Collection => ConvertCollectionSyntaxTreeNodeToCode(syntaxTreeNode),
             _ => throw new Exception($"Unable to convert abstract syntax tree node {syntaxTreeNode.Type} to code"),
         };
     }
@@ -123,7 +123,7 @@ internal static class Transpiler
         {
             output
                 .AppendJoin(Environment.NewLine + "  ", syntaxTreeNode.Children
-                    .Select(child => child.Value + " " + ConvertAbstractSyntaxTreeToCode(child.Children[0])));
+                    .Select(child => child.Value + ' ' + ConvertAbstractSyntaxTreeToCode(child.Children[0])));
         }
         else
         {
@@ -199,15 +199,11 @@ internal static class Transpiler
         return syntaxTreeNode.Value.Insert(0, ";;");
     }
 
-    [Pure]
-    private static string ConvertInvocationSyntaxTreeNodeToCode(SyntaxTreeNode syntaxTreeNode)
+    private static string ConvertCollectionSyntaxTreeNodeToCode(SyntaxTreeNode syntaxTreeNode)
     {
-        return new StringBuilder()
-            .Append("(. ")
-            .Append(syntaxTreeNode.Value)
-            .AppendJoin(' ', syntaxTreeNode.Children
-                .Select(ConvertAbstractSyntaxTreeToCode))
-            .Append(')')
-            .ToString();
+        string collectionContents = string.Join(' ', syntaxTreeNode.Children
+            .Select(ConvertAbstractSyntaxTreeToCode));
+        
+        return "[]".Insert(1, collectionContents);
     }
 }

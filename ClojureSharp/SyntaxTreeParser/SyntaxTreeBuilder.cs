@@ -278,22 +278,26 @@ internal static class SyntaxTreeBuilder
                         ]
                     }]
             };
-        
-        if (expressionTokens[0] is { Type: TokenType.NameIdentifierToken}
-            && expressionTokens[1] is { Type: TokenType.OpenParenthesisToken}
-            && expressionTokens[^1] is { Type: TokenType.CloseParenthesisToken})
+
+        if (expressionTokens[0] is { Type: TokenType.NameIdentifierToken }
+            && expressionTokens[1] is { Type: TokenType.OpenParenthesisToken }
+            && expressionTokens[^1] is { Type: TokenType.CloseParenthesisToken })
             return new SyntaxTreeNode
             {
                 Value = expressionTokens[0].Value!,
                 Type = SyntaxTreeNodeType.Expression,
-                Children = expressionTokens[2..^1]
-                    .GroupWhile((prev, next) =>
-                        prev is not {Type: TokenType.CommaToken}
-                        && next is not {Type: TokenType.CommaToken})
-                    .Where(tokenGroup => tokenGroup.First().Type is not TokenType.CommaToken)
-                    .Select(group => ParseExpression(group.ToArray()))
-                    .ToArray()
+                Children = ParseCollection(expressionTokens[2..^1])
             };
+        
+        if (expressionTokens[0] is { Type: TokenType.OpenCollectionToken }
+            && expressionTokens[^1] is { Type: TokenType.CloseCollectionToken })
+        {
+            return new SyntaxTreeNode
+            {
+                Type = SyntaxTreeNodeType.Collection,
+                Children = ParseCollection(expressionTokens[1..^1])
+            };
+        }
         
         if (expressionTokens.IndexOf(token => token is {Type: TokenType.NumericOperationToken}) is { } numericOperationIndex and >= 0)
         {
@@ -324,30 +328,34 @@ internal static class SyntaxTreeBuilder
             };
         }
 
-        // if (expressionTokens[0] is { Type: TokenType.InvocationToken }
-        //     && expressionTokens[1] is not { Type: TokenType.CollectionDeclarationToken })
-        // {
-        //     return new SyntaxTreeNode
-        //     {
-        //         Value = expressionTokens[1].Value!,
-        //         Type = SyntaxTreeNodeType.Invocation,
-        //         Children = expressionTokens[3..^1] is { Length: > 0 }
-        //             ? [ParseExpression(expressionTokens[3..^1])]
-        //             : []
-        //     };
-        // }
-        //
-        // if (expressionTokens[0] is { Type: TokenType.InvocationToken })
-        // {
-        //     return new SyntaxTreeNode
-        //     {
-        //         Value = "[" + string.Join(' ', expressionTokens[3..^1]
-        //             .Where(token => token is not { Type: TokenType.CommaToken })
-        //             .Select(child => child.Value)) + "]",
-        //         Type = SyntaxTreeNodeType.Literal,
-        //     };
-        // }
+        if (expressionTokens[0] is { Type: TokenType.NameIdentifierToken }
+            && expressionTokens[1] is { Type: TokenType.DotMethodToken }
+            && expressionTokens[2] is { Type: TokenType.NameIdentifierToken })
+        {
+            return new SyntaxTreeNode
+            {
+                Value = expressionTokens[2].Value!,
+                Type = SyntaxTreeNodeType.Expression,
+                Children =
+                [
+                    ParseExpression(expressionTokens[0]),
+                    ..ParseCollection(expressionTokens[4..^1])
+                ]
+            };
+        }
         
         throw new Exception($"Failed to parse expression {string.Join(';', expressionTokens.Select(token => token.ToString()))}");
+    }
+
+    [Pure]
+    private static SyntaxTreeNode[] ParseCollection(params Token[] collectionTokens)
+    {
+        return collectionTokens
+            .GroupWhile((prev, next) =>
+                prev is not { Type: TokenType.CommaToken }
+                && next is not { Type: TokenType.CommaToken })
+            .Where(tokenGroup => tokenGroup.First() is not { Type: TokenType.CommaToken })
+            .Select(part => ParseExpression(part.ToArray()))
+            .ToArray();
     }
 }

@@ -23,9 +23,9 @@ internal enum SyntaxTreeNodeType
     MethodArgument,
     Literal,
     Expression,
-    // Invocation,
     Assignment,
     EqualityCheck,
     Branch,
-    Comment
+    Comment,
+    Collection
 }
