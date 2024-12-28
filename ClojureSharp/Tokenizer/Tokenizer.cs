@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Diagnostics.Contracts;
+using System.Text;
 
 namespace ClojureSharp.Tokenizer;
 
@@ -17,6 +18,18 @@ internal class Tokenizer(string sourceCode)
                 _sourceCode.Dequeue();
                 continue;
             }
+
+            if (_sourceCode.Count > 1
+                && _sourceCode.ElementAt(0) is '/'
+                && _sourceCode.ElementAt(1) is '/')
+            {
+                StringBuilder commentStringBuilder = new StringBuilder();
+                while (_sourceCode.Peek() is not ('\r' or '\n'))
+                    commentStringBuilder.Append(_sourceCode.Dequeue());
+
+                tokenBuffer.Enqueue(new Token(TokenType.CommentToken, commentStringBuilder.ToString()[2..]));
+                continue;
+            }
             
             if (char.IsLetterOrDigit(character))
             {
@@ -30,8 +43,12 @@ internal class Tokenizer(string sourceCode)
                         => new Token(TokenType.NamespaceToken),
                     "class"
                         => new Token(TokenType.ClassToken),
-                    "int" or "double" or "string" or "bool"
+                    "new"
+                        => new Token(TokenType.InvocationToken),
+                    "var" or "int" or "double" or "string" or "bool"
                         => new Token(TokenType.TypeDeclarationToken, parsedIdentifier),
+                    _ when IsGenericType(parsedIdentifier)
+                        => new Token(TokenType.CollectionDeclarationToken, parsedIdentifier),
                     "true" or "false" 
                         => new Token(TokenType.BooleanLiteralToken, parsedIdentifier),
                     "null"
@@ -90,6 +107,7 @@ internal class Tokenizer(string sourceCode)
                     '|' or '&'
                         => new Token(TokenType.BooleanOperationToken, character.ToString()),
                     ',' => new Token(TokenType.CommaToken),
+                    '.' => new Token(TokenType.DotMethodToken), 
                     _ => throw new FormatException($"Unrecognized character '{character}'.")
                 });
 
@@ -102,12 +120,20 @@ internal class Tokenizer(string sourceCode)
 
         return tokenBuffer.ToArray();
     }
-    
+
+    [Pure]
+    private static bool IsGenericType(string textValue)
+    {
+        return textValue.StartsWith("List") 
+            || textValue.StartsWith("Array")
+            || textValue.StartsWith("Queue");
+    }
+
     private string ParseIdentifier()
     {
         StringBuilder parsedCharacters = new StringBuilder();
 
-        while (_sourceCode.TryPeek(out char character) && char.IsLetterOrDigit(character))
+        while (_sourceCode.TryPeek(out char character) && (char.IsLetterOrDigit(character) || character is '<' or '>'))
             parsedCharacters.Append(_sourceCode.Dequeue());
 
         return parsedCharacters.ToString();

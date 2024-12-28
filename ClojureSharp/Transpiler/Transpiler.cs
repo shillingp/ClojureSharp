@@ -13,7 +13,7 @@ internal static class Transpiler
         
         output.Append(ConvertAbstractSyntaxTreeToCode(abstractSyntaxTree));
         
-        foreach (SyntaxTreeNode child in abstractSyntaxTree.Children ?? [])
+        foreach (SyntaxTreeNode child in abstractSyntaxTree.Children)
             output.Append(ConvertAbstractSyntaxTreeToCode(child));
         
         return output.ToString();
@@ -33,6 +33,7 @@ internal static class Transpiler
             SyntaxTreeNodeType.Branch => ConvertBranchSyntaxTreeNodeToCode(syntaxTreeNode),
             SyntaxTreeNodeType.Class => ConvertClassSyntaxTreeNodeToCode(syntaxTreeNode),
             SyntaxTreeNodeType.Comment => ConvertCommentSyntaxTreeNodeToCode(syntaxTreeNode),
+            SyntaxTreeNodeType.Invocation => ConvertInvocationSyntaxTreeNodeToCode(syntaxTreeNode),
             _ => throw new Exception($"Unable to convert abstract syntax tree node {syntaxTreeNode.Type} to code"),
         };
     }
@@ -49,8 +50,9 @@ internal static class Transpiler
     [Pure]
     private static string ConvertClassSyntaxTreeNodeToCode(SyntaxTreeNode syntaxTreeNode)
     {
-        throw new Exception("Classes are not supported");
+        throw new Exception($"Classes are not supported for {syntaxTreeNode.Value}");
         
+        /*
         return new StringBuilder(
                 $"""
                 (gen-class
@@ -65,11 +67,12 @@ internal static class Transpiler
             .Append("    [[] (atom {")
             .AppendJoin(' ', (syntaxTreeNode.Children ?? [])
                 .Where(child => child is { Type: SyntaxTreeNodeType.Assignment })
-                .Select(child => $":{child.Value} {ConvertAbstractSyntaxTreeToCode(child.Children![0])}"))
+                .Select(child => $":{child.Value} {ConvertAbstractSyntaxTreeToCode(child.Children[0])}"))
             .Append("})])")
             .AppendLine()
             .AppendLine()
             .ToString();
+            */
     }
     
     [Pure]
@@ -79,11 +82,11 @@ internal static class Transpiler
             .Append("(defn ")
             .Append(syntaxTreeNode.Value)
             .Append(" [")
-            .AppendJoin(' ', (syntaxTreeNode.Children?
-                    .Where(token => token is { Type: SyntaxTreeNodeType.MethodArgument }) ?? [])
+            .AppendJoin(' ', (syntaxTreeNode.Children
+                    .Where(token => token is { Type: SyntaxTreeNodeType.MethodArgument }))
                 .Select(token => token.Value))
             .AppendLine("]")
-            .AppendJoin(Environment.NewLine, (syntaxTreeNode.Children ?? [])
+            .AppendJoin(Environment.NewLine, (syntaxTreeNode.Children)
                     .Where(child => child is not { Type: SyntaxTreeNodeType.MethodArgument })
                 .Select(ConvertAbstractSyntaxTreeToCode));
 
@@ -104,7 +107,7 @@ internal static class Transpiler
             .Append('(')
             .Append(syntaxTreeNode.Value)
             .Append(' ')
-            .AppendJoin(' ', (syntaxTreeNode.Children ?? [])
+            .AppendJoin(' ', syntaxTreeNode.Children
                 .Select(ConvertAbstractSyntaxTreeToCode))
             .Append(')')
             .ToString();
@@ -116,18 +119,18 @@ internal static class Transpiler
         StringBuilder output = new StringBuilder()
             .Append("(let [");
 
-        if (syntaxTreeNode.Children?.Any(child => child is { Type: SyntaxTreeNodeType.Assignment}) ?? false)
+        if (syntaxTreeNode.Children.Any(child => child is { Type: SyntaxTreeNodeType.Assignment}))
         {
             output
                 .AppendJoin(Environment.NewLine + "  ", syntaxTreeNode.Children
-                    .Select(child => child.Value + " " + ConvertAbstractSyntaxTreeToCode(child.Children![0])));
+                    .Select(child => child.Value + " " + ConvertAbstractSyntaxTreeToCode(child.Children[0])));
         }
         else
         {
             output
                 .Append(syntaxTreeNode.Value)
                 .Append(' ')
-                .Append(ConvertAbstractSyntaxTreeToCode(syntaxTreeNode.Children![0]));
+                .Append(ConvertAbstractSyntaxTreeToCode(syntaxTreeNode.Children[0]));
         }
             
         return output
@@ -140,7 +143,7 @@ internal static class Transpiler
     {
         return new StringBuilder()
             .Append("(= ")
-            .AppendJoin(' ', (syntaxTreeNode.Children ?? [])
+            .AppendJoin(' ', (syntaxTreeNode.Children)
                 .Select(ConvertAbstractSyntaxTreeToCode))
             .Append(')')
             .ToString();
@@ -167,16 +170,16 @@ internal static class Transpiler
             indexOffset = 1;
             output
                 .Append("(if ")
-                .AppendLine(ConvertAbstractSyntaxTreeToCode(syntaxTreeNode.Children![0]));
+                .AppendLine(ConvertAbstractSyntaxTreeToCode(syntaxTreeNode.Children[0]));
         }
         
-        if (syntaxTreeNode.Children!.Length == indexOffset + 1)
+        if (syntaxTreeNode.Children.Length == indexOffset + 1)
             output.Append(ConvertAbstractSyntaxTreeToCode(syntaxTreeNode.Children[indexOffset]));
         else
         {
             output
                 .AppendLine("(do ")
-                .AppendJoin(Environment.NewLine, syntaxTreeNode.Children!.Skip(indexOffset)
+                .AppendJoin(Environment.NewLine, syntaxTreeNode.Children.Skip(indexOffset)
                     .Select(ConvertAbstractSyntaxTreeToCode))
                 .Append(")");
         }
@@ -194,5 +197,17 @@ internal static class Transpiler
     private static string ConvertCommentSyntaxTreeNodeToCode(SyntaxTreeNode syntaxTreeNode)
     {
         return syntaxTreeNode.Value.Insert(0, ";;");
+    }
+
+    [Pure]
+    private static string ConvertInvocationSyntaxTreeNodeToCode(SyntaxTreeNode syntaxTreeNode)
+    {
+        return new StringBuilder()
+            .Append("(. ")
+            .Append(syntaxTreeNode.Value)
+            .AppendJoin(' ', syntaxTreeNode.Children
+                .Select(ConvertAbstractSyntaxTreeToCode))
+            .Append(')')
+            .ToString();
     }
 }

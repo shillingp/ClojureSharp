@@ -28,7 +28,11 @@ internal enum TokenType
     ClassToken,
     
     TypeDeclarationToken,
+    CollectionDeclarationToken,
     NameIdentifierToken,
+    
+    InvocationToken,
+    DotMethodToken,
     
     OpenParenthesisToken,
     CloseParenthesisToken,
