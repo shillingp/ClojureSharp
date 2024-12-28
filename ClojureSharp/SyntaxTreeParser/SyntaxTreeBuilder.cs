@@ -1,7 +1,7 @@
 ﻿using System.Buffers;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
-using ClojureSharp.Extensions.Array;
+using ClojureSharp.Extensions.Span;
 using ClojureSharp.Tokenizer;
 
 namespace ClojureSharp.SyntaxTreeParser;
@@ -9,7 +9,7 @@ namespace ClojureSharp.SyntaxTreeParser;
 internal static class SyntaxTreeBuilder
 {
     [Pure]
-    internal static SyntaxTreeNode Parse(Token[] sourceTokens)
+    internal static SyntaxTreeNode Parse(ReadOnlySpan<Token> sourceTokens)
     { 
         int currentIndex = 0;
         
@@ -65,7 +65,7 @@ internal static class SyntaxTreeBuilder
     }
 
     [Pure]
-    private static int FindIndexOfLastClosingScope(Token[] tokens, int startingPosition)
+    private static int FindIndexOfLastClosingScope(ReadOnlySpan<Token> tokens, int startingPosition)
     {
         uint openScopeCount = 0;
         int? firstOpeningScope = null;
@@ -87,7 +87,7 @@ internal static class SyntaxTreeBuilder
     }
 
     [Pure]
-    private static Token[] RetrieveAllTokensInInnerScope(params Token[] outerScopeTokens)
+    private static ReadOnlySpan<Token> RetrieveAllTokensInInnerScope(ReadOnlySpan<Token> outerScopeTokens)
     {
         uint openScopeCount = 0;
         int? firstOpeningScope = null;
@@ -108,13 +108,13 @@ internal static class SyntaxTreeBuilder
     }
 
     [Pure]
-    private static SyntaxTreeNode ParseMethod(params Token[] methodTokens)
+    private static SyntaxTreeNode ParseMethod(ReadOnlySpan<Token> methodTokens)
     {
         int argumentOpenParenthesisIndex = methodTokens.IndexOf(token => token is { Type: TokenType.OpenParenthesisToken }); 
         int argumentCloseParenthesisIndex = methodTokens.IndexOf(token => token is { Type: TokenType.CloseParenthesisToken });
-        Token[] methodArgumentTokens = methodTokens[(argumentOpenParenthesisIndex+1)..argumentCloseParenthesisIndex];
+        ReadOnlySpan<Token> methodArgumentTokens = methodTokens[(argumentOpenParenthesisIndex+1)..argumentCloseParenthesisIndex];
         
-        Token[] methodBodyTokens = RetrieveAllTokensInInnerScope(methodTokens);
+        ReadOnlySpan<Token> methodBodyTokens = RetrieveAllTokensInInnerScope(methodTokens);
         
         return new SyntaxTreeNode
         {
@@ -128,7 +128,7 @@ internal static class SyntaxTreeBuilder
     }
     
     [Pure]
-    private static ReadOnlySpan<SyntaxTreeNode> ParseMethodArguments(params Token[] methodArgumentTokens)
+    private static ReadOnlySpan<SyntaxTreeNode> ParseMethodArguments(ReadOnlySpan<Token> methodArgumentTokens)
     {
         SyntaxTreeNode[] argumentSyntaxTreeNodes = ArrayPool<SyntaxTreeNode>.Shared.Rent(methodArgumentTokens.Length / 2);
         
@@ -147,7 +147,7 @@ internal static class SyntaxTreeBuilder
     }
 
     [Pure]
-    private static SyntaxTreeNode[] ParseInternalScope(params Token[] methodBodyTokens)
+    private static SyntaxTreeNode[] ParseInternalScope(ReadOnlySpan<Token> methodBodyTokens)
     {
         ArgumentException.ThrowIfNullOrEmpty("Value cannot be an empty collection.", nameof(methodBodyTokens));
         
@@ -230,7 +230,7 @@ internal static class SyntaxTreeBuilder
     }
 
     [Pure]
-    private static SyntaxTreeNode ParseExpression(params Token[] expressionTokens)
+    private static SyntaxTreeNode ParseExpression(ReadOnlySpan<Token> expressionTokens)
     {
         if (expressionTokens[^1] is {Type: TokenType.SemicolonToken })
             expressionTokens = expressionTokens[..^1];
@@ -253,7 +253,6 @@ internal static class SyntaxTreeBuilder
 
         if (expressionTokens[0] is { Type: TokenType.BranchingOperatorToken, Value: "if" }
             && expressionTokens.IndexOf(token => token is { Type: TokenType.CloseParenthesisToken }) is { } branchCheckParenthesisIndex and > 0)
-        {
             return new SyntaxTreeNode
             {
                 Value = expressionTokens[0].Value!,
@@ -264,17 +263,14 @@ internal static class SyntaxTreeBuilder
                     ..ParseInternalScope(expressionTokens[(branchCheckParenthesisIndex + 2)..])
                 ]
             };
-        }
 
         if (expressionTokens[0] is { Type: TokenType.BranchingOperatorToken, Value: "else" })
-        {
             return new SyntaxTreeNode
             {
                 Value = expressionTokens[0].Value!,
                 Type = SyntaxTreeNodeType.Branch,
                 Children = ParseInternalScope(expressionTokens[2..])
             };
-        }
 
         if (expressionTokens.IndexOf(token => token is { Type: TokenType.AssignmentOperatorToken }) is
                 { } assignmentOperatorIndex and > 0
@@ -289,7 +285,7 @@ internal static class SyntaxTreeBuilder
                     Type = SyntaxTreeNodeType.Expression,
                     Children =
                     [
-                        ParseExpression(expressionTokens[assignmentOperatorIndex - 1]),
+                        ParseExpression([expressionTokens[assignmentOperatorIndex - 1]]),
                         ParseExpression(expressionTokens[(assignmentOperatorIndex + 1)..])
                     ]
                 };
@@ -313,16 +309,13 @@ internal static class SyntaxTreeBuilder
         
         if (expressionTokens[0] is { Type: TokenType.OpenCollectionToken }
             && expressionTokens[^1] is { Type: TokenType.CloseCollectionToken })
-        {
             return new SyntaxTreeNode
             {
                 Type = SyntaxTreeNodeType.Collection,
                 Children = ParseCollection(expressionTokens[1..^1])
             };
-        }
         
         if (expressionTokens.IndexOf(token => token is {Type: TokenType.NumericOperationToken}) is { } numericOperationIndex and >= 0)
-        {
             return new SyntaxTreeNode
             {
                 Value = expressionTokens[1].Value!,
@@ -335,10 +328,8 @@ internal static class SyntaxTreeBuilder
                         ParseExpression(expressionTokens[(numericOperationIndex + 1)..])
                     ]
             };
-        }
         
         if (expressionTokens.IndexOf(token => token is { Type: TokenType.EqualityOperatorToken }) is { } equalityIndex and >= 0)
-        {
             return new SyntaxTreeNode
             {
                 Type = SyntaxTreeNodeType.EqualityCheck,
@@ -348,29 +339,27 @@ internal static class SyntaxTreeBuilder
                     ParseExpression(expressionTokens[(equalityIndex + 1)..])
                 ]
             };
-        }
 
         if (expressionTokens[0] is { Type: TokenType.NameIdentifierToken }
             && expressionTokens[1] is { Type: TokenType.DotMethodToken }
             && expressionTokens[2] is { Type: TokenType.NameIdentifierToken })
-        {
             return new SyntaxTreeNode
             {
                 Value = expressionTokens[2].Value!,
                 Type = SyntaxTreeNodeType.Expression,
                 Children =
                 [
-                    ParseExpression(expressionTokens[0]),
+                    ParseExpression([expressionTokens[0]]),
                     ..ParseCollection(expressionTokens[4..^1])
                 ]
             };
-        }
         
-        throw new Exception($"Failed to parse expression {string.Join(';', expressionTokens.Select(token => token.ToString()))}");
+        // throw new Exception($"Failed to parse expression {string.Join(';', expressionTokens.Select(token => token.ToString()))}");
+        throw new Exception($"Failed to parse expression {string.Join(';', expressionTokens.ToString())}");
     }
 
     [Pure]
-    private static SyntaxTreeNode[] ParseCollection(params Token[] collectionTokens)
+    private static SyntaxTreeNode[] ParseCollection(ReadOnlySpan<Token> collectionTokens)
     {
         int elementsCounter = 0;
         SyntaxTreeNode[] collectionElements = ArrayPool<SyntaxTreeNode>.Shared.Rent(collectionTokens.Length);
