@@ -350,12 +350,10 @@ internal static class SyntaxTreeBuilder
                 Children =
                 [
                     ParseExpression([expressionTokens[0]]),
-                    // TODO: Support chained dot method calls
                     ..ParseCollection(expressionTokens[4..^1])
                 ]
             };
         
-        // throw new Exception($"Failed to parse expression {string.Join(';', expressionTokens.Select(token => token.ToString()))}");
         throw new Exception($"Failed to parse expression {string.Join(';', expressionTokens.ToString())}");
     }
 

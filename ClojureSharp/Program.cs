@@ -16,13 +16,11 @@ Token[] sourceCodeTokens = tokenizer.Tokenize();
 Console.WriteLine("Tokenizer: {0}", sw.ElapsedMilliseconds);
 sw.Restart();
 
-// SyntaxTreeBuilder syntaxTreeBuilder = new SyntaxTreeBuilder();
 SyntaxTreeNode abstractSyntaxTree = SyntaxTreeBuilder.Parse(sourceCodeTokens);
 
 Console.WriteLine("AST Builder: {0}", sw.ElapsedMilliseconds);
 sw.Restart();
 
-// Transpiler transpiler = new Transpiler(abstractSyntaxTree);
 string transpiledCode = Transpiler.Transpile(abstractSyntaxTree);
 
 Console.WriteLine("Transpiler: {0}", sw.ElapsedMilliseconds);
