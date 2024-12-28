@@ -11,6 +11,11 @@ internal readonly record struct SyntaxTreeNode
         Value = "";
         Children = new SyntaxTreeNode[0];
     }
+
+    public override string ToString()
+    {
+        return $"{{Type: {Type}, Value: {Value}, Children: {Children.Length}}}";
+    }
 }
 
 internal enum SyntaxTreeNodeType
