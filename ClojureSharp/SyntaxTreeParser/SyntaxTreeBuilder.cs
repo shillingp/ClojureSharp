@@ -1,6 +1,6 @@
 ﻿using System.Buffers;
 using System.Diagnostics.Contracts;
-using ClojureSharp.Extensions;
+using System.Runtime.InteropServices;
 using ClojureSharp.Extensions.Array;
 using ClojureSharp.Tokenizer;
 
@@ -17,7 +17,7 @@ internal static class SyntaxTreeBuilder
             && sourceTokens[1] is not { Type: TokenType.NameIdentifierToken})
             throw new Exception("Namespace not found");
         
-        List<SyntaxTreeNode> namespaceNodes = new List<SyntaxTreeNode>();
+        Queue<SyntaxTreeNode> internalNodes = new Queue<SyntaxTreeNode>();
         
         while (currentIndex < sourceTokens.Length)
         {
@@ -25,7 +25,7 @@ internal static class SyntaxTreeBuilder
                 && sourceTokens[currentIndex + 1] is { Type: TokenType.NameIdentifierToken }
                 && sourceTokens[currentIndex + 2] is { Type: TokenType.OpenParenthesisToken })
             {
-                namespaceNodes.Add(ParseMethod(sourceTokens[currentIndex..]));
+                internalNodes.Enqueue(ParseMethod(sourceTokens[currentIndex..]));
                 
                 currentIndex = FindIndexOfLastClosingScope(sourceTokens, currentIndex);
             }
@@ -34,7 +34,7 @@ internal static class SyntaxTreeBuilder
             {
                 int endIndex = FindIndexOfLastClosingScope(sourceTokens, currentIndex);
                 
-                namespaceNodes.Add(new SyntaxTreeNode
+                internalNodes.Enqueue(new SyntaxTreeNode
                 {
                     Value = sourceTokens[currentIndex+1].Value!,
                     Type = SyntaxTreeNodeType.Class,
@@ -49,7 +49,7 @@ internal static class SyntaxTreeBuilder
                 int semiColonIndex = currentIndex + sourceTokens[currentIndex..]
                     .IndexOf(token => token.Type == TokenType.SemicolonToken);
                 
-                namespaceNodes.Add(ParseExpression(sourceTokens[currentIndex..semiColonIndex]));
+                internalNodes.Enqueue(ParseExpression(sourceTokens[currentIndex..semiColonIndex]));
                 currentIndex = semiColonIndex;
             }
             
@@ -60,7 +60,7 @@ internal static class SyntaxTreeBuilder
         {
             Value = sourceTokens[1].Value!,
             Type = SyntaxTreeNodeType.Namespace,
-            Children = namespaceNodes.ToArray(),
+            Children = internalNodes.ToArray(),
         };
     }
 
@@ -130,8 +130,6 @@ internal static class SyntaxTreeBuilder
     [Pure]
     private static ReadOnlySpan<SyntaxTreeNode> ParseMethodArguments(params Token[] methodArgumentTokens)
     {
-        ArgumentException.ThrowIfNullOrEmpty("Value cannot be an empty collection.", nameof(methodArgumentTokens));
-
         SyntaxTreeNode[] argumentSyntaxTreeNodes = ArrayPool<SyntaxTreeNode>.Shared.Rent(methodArgumentTokens.Length / 2);
         
         int syntaxNodeCounter = 0;
@@ -194,28 +192,46 @@ internal static class SyntaxTreeBuilder
             
             tokenIndex = indexOfScopeEnding + 1;
         }
+
+        Span<SyntaxTreeNode> bodyNodesSpan = CollectionsMarshal.AsSpan(bodyNodes);
+        return GroupConsecutiveAssignments(bodyNodesSpan);
+    }
+
+    [Pure]
+    private static SyntaxTreeNode[] GroupConsecutiveAssignments(Span<SyntaxTreeNode> bodyNodesSpan)
+    {
+        Queue<SyntaxTreeNode> bodyNodesWithCompoundAssignment = new Queue<SyntaxTreeNode>();
         
-        return bodyNodes
-            .GroupWhile((previous, next) => previous.Type == next.Type && next.Type is SyntaxTreeNodeType.Assignment)
-            .Select(treeGroup =>
+        for (int i = 0; i < bodyNodesSpan.Length; i++)
+        {
+            if (bodyNodesSpan[i] is not { Type: SyntaxTreeNodeType.Assignment })
             {
-                SyntaxTreeNode[] syntaxTreeNodes = treeGroup as SyntaxTreeNode[] ?? treeGroup.ToArray();
-                return syntaxTreeNodes is { Length: 1 }
-                    ? syntaxTreeNodes[0]
+                bodyNodesWithCompoundAssignment.Enqueue(bodyNodesSpan[i]);
+                continue;
+            }
+
+            int j = i + 1;
+            while (j < bodyNodesSpan.Length && bodyNodesSpan[j] is { Type: SyntaxTreeNodeType.Assignment })
+                j++;
+
+            bodyNodesWithCompoundAssignment.Enqueue(
+                i + 1 == j
+                    ? bodyNodesSpan[i]
                     : new SyntaxTreeNode
                     {
                         Type = SyntaxTreeNodeType.Assignment,
-                        Children = syntaxTreeNodes.ToArray()
-                    };
-            })
-            .ToArray();
+                        Children = bodyNodesSpan[i..j].ToArray()
+                    });
+
+            i = j - 1;
+        }
+
+        return bodyNodesWithCompoundAssignment.ToArray();
     }
 
     [Pure]
     private static SyntaxTreeNode ParseExpression(params Token[] expressionTokens)
     {
-        ArgumentException.ThrowIfNullOrEmpty("Value cannot be an empty collection.", nameof(expressionTokens));
-        
         if (expressionTokens[^1] is {Type: TokenType.SemicolonToken })
             expressionTokens = expressionTokens[..^1];
         
@@ -259,25 +275,31 @@ internal static class SyntaxTreeBuilder
                 Children = ParseInternalScope(expressionTokens[2..])
             };
         }
-        
-        if (expressionTokens.IndexOf(token => token is { Type: TokenType.AssignmentOperatorToken }) is { } assignmentOperatorIndex and > 0
-            && expressionTokens[assignmentOperatorIndex - 1] is { Type: TokenType.NameIdentifierToken} variableNameToken)
+
+        if (expressionTokens.IndexOf(token => token is { Type: TokenType.AssignmentOperatorToken }) is
+                { } assignmentOperatorIndex and > 0
+            && expressionTokens[assignmentOperatorIndex - 1] is
+                { Type: TokenType.NameIdentifierToken } variableNameToken)
+        {
+            SyntaxTreeNode childAssignmentNode = expressionTokens[assignmentOperatorIndex] is { Value: null }
+                ? ParseExpression(expressionTokens[(assignmentOperatorIndex + 1)..])
+                : new SyntaxTreeNode
+                {
+                    Value = expressionTokens[assignmentOperatorIndex].Value![0].ToString(),
+                    Type = SyntaxTreeNodeType.Expression,
+                    Children =
+                    [
+                        ParseExpression(expressionTokens[assignmentOperatorIndex - 1]),
+                        ParseExpression(expressionTokens[(assignmentOperatorIndex + 1)..])
+                    ]
+                };
             return new SyntaxTreeNode
             {
                 Value = variableNameToken.Value!,
                 Type = SyntaxTreeNodeType.Assignment,
-                Children = expressionTokens[assignmentOperatorIndex] is { Value: null }
-                    ? [ParseExpression(expressionTokens[(assignmentOperatorIndex+1)..])]
-                    : [new SyntaxTreeNode
-                    {
-                        Value = expressionTokens[assignmentOperatorIndex].Value![0].ToString(),
-                        Type = SyntaxTreeNodeType.Expression,
-                        Children = [
-                            ParseExpression(expressionTokens[assignmentOperatorIndex-1]),
-                            ParseExpression(expressionTokens[(assignmentOperatorIndex+1)..])
-                        ]
-                    }]
+                Children = [childAssignmentNode]
             };
+        }
 
         if (expressionTokens[0] is { Type: TokenType.NameIdentifierToken }
             && expressionTokens[1] is { Type: TokenType.OpenParenthesisToken }

@@ -82,11 +82,11 @@ internal static class Transpiler
             .Append("(defn ")
             .Append(syntaxTreeNode.Value)
             .Append(" [")
-            .AppendJoin(' ', (syntaxTreeNode.Children
-                    .Where(token => token is { Type: SyntaxTreeNodeType.MethodArgument }))
+            .AppendJoin(' ', syntaxTreeNode.Children
+                    .Where(token => token is { Type: SyntaxTreeNodeType.MethodArgument })
                 .Select(token => token.Value))
             .AppendLine("]")
-            .AppendJoin(Environment.NewLine, (syntaxTreeNode.Children)
+            .AppendJoin(Environment.NewLine, syntaxTreeNode.Children
                     .Where(child => child is not { Type: SyntaxTreeNodeType.MethodArgument })
                 .Select(ConvertAbstractSyntaxTreeToCode));
 
@@ -143,7 +143,7 @@ internal static class Transpiler
     {
         return new StringBuilder()
             .Append("(= ")
-            .AppendJoin(' ', (syntaxTreeNode.Children)
+            .AppendJoin(' ', syntaxTreeNode.Children
                 .Select(ConvertAbstractSyntaxTreeToCode))
             .Append(')')
             .ToString();

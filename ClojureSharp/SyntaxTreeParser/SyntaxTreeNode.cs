@@ -1,6 +1,4 @@
-﻿using System.ComponentModel;
-
-namespace ClojureSharp.SyntaxTreeParser;
+﻿namespace ClojureSharp.SyntaxTreeParser;
 
 internal readonly record struct SyntaxTreeNode
 {
