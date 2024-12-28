@@ -38,7 +38,7 @@ internal static class SyntaxTreeBuilder
                 {
                     Value = sourceTokens[currentIndex+1].Value!,
                     Type = SyntaxTreeNodeType.Class,
-                    Children = ParseInternalScope(sourceTokens[(currentIndex+2)..endIndex]),
+                    Children = ParseInternalScope(sourceTokens[(currentIndex+2)..endIndex]).ToArray(),
                 });
                 
                 currentIndex = endIndex;
@@ -147,7 +147,7 @@ internal static class SyntaxTreeBuilder
     }
 
     [Pure]
-    private static SyntaxTreeNode[] ParseInternalScope(ReadOnlySpan<Token> methodBodyTokens)
+    private static ReadOnlySpan<SyntaxTreeNode> ParseInternalScope(ReadOnlySpan<Token> methodBodyTokens)
     {
         ArgumentException.ThrowIfNullOrEmpty("Value cannot be an empty collection.", nameof(methodBodyTokens));
         
@@ -198,7 +198,7 @@ internal static class SyntaxTreeBuilder
     }
 
     [Pure]
-    private static SyntaxTreeNode[] GroupConsecutiveAssignments(Span<SyntaxTreeNode> bodyNodesSpan)
+    private static ReadOnlySpan<SyntaxTreeNode> GroupConsecutiveAssignments(Span<SyntaxTreeNode> bodyNodesSpan)
     {
         Queue<SyntaxTreeNode> bodyNodesWithCompoundAssignment = new Queue<SyntaxTreeNode>();
         
@@ -269,7 +269,7 @@ internal static class SyntaxTreeBuilder
             {
                 Value = expressionTokens[0].Value!,
                 Type = SyntaxTreeNodeType.Branch,
-                Children = ParseInternalScope(expressionTokens[2..])
+                Children = ParseInternalScope(expressionTokens[2..]).ToArray()
             };
 
         if (expressionTokens.IndexOf(token => token is { Type: TokenType.AssignmentOperatorToken }) is
@@ -304,7 +304,7 @@ internal static class SyntaxTreeBuilder
             {
                 Value = expressionTokens[0].Value!,
                 Type = SyntaxTreeNodeType.Expression,
-                Children = ParseCollection(expressionTokens[2..^1])
+                Children = ParseCollection(expressionTokens[2..^1]).ToArray(),
             };
         
         if (expressionTokens[0] is { Type: TokenType.OpenCollectionToken }
@@ -312,7 +312,7 @@ internal static class SyntaxTreeBuilder
             return new SyntaxTreeNode
             {
                 Type = SyntaxTreeNodeType.Collection,
-                Children = ParseCollection(expressionTokens[1..^1])
+                Children = ParseCollection(expressionTokens[1..^1]).ToArray()
             };
         
         if (expressionTokens.IndexOf(token => token is {Type: TokenType.NumericOperationToken}) is { } numericOperationIndex and >= 0)
@@ -359,7 +359,7 @@ internal static class SyntaxTreeBuilder
     }
 
     [Pure]
-    private static SyntaxTreeNode[] ParseCollection(ReadOnlySpan<Token> collectionTokens)
+    private static ReadOnlySpan<SyntaxTreeNode> ParseCollection(ReadOnlySpan<Token> collectionTokens)
     {
         int elementsCounter = 0;
         SyntaxTreeNode[] collectionElements = ArrayPool<SyntaxTreeNode>.Shared.Rent(collectionTokens.Length);
