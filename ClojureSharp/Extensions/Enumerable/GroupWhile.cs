@@ -1,4 +1,4 @@
-﻿namespace ClojureSharp.Extensions;
+﻿namespace ClojureSharp.Extensions.Enumerable;
 
 public static partial class EnumerableExtensions
 {

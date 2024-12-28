@@ -1,6 +1,6 @@
 ﻿using System.Text.RegularExpressions;
 
-namespace ClojureSharp.Extensions;
+namespace ClojureSharp.Extensions.String;
 
 public static partial class StringExtensions
 {
