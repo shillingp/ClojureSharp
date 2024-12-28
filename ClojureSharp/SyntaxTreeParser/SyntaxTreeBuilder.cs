@@ -350,6 +350,7 @@ internal static class SyntaxTreeBuilder
                 Children =
                 [
                     ParseExpression([expressionTokens[0]]),
+                    // TODO: Support chained dot method calls
                     ..ParseCollection(expressionTokens[4..^1])
                 ]
             };

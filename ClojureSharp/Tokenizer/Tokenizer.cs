@@ -20,7 +20,7 @@ internal class Tokenizer(string sourceCode)
             }
 
             if (_sourceCode.Count > 1
-                && _sourceCode.ElementAt(0) is '/'
+                && _sourceCode.Peek() is '/'
                 && _sourceCode.ElementAt(1) is '/')
             {
                 StringBuilder commentStringBuilder = new StringBuilder();
