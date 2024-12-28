@@ -18,22 +18,22 @@ public static partial class EnumerableExtensions
     /// //  ->  [1, 3, 1, 1, 2, 1]
     /// </code>
     /// </summary>
-    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="TSource"></typeparam>
     /// <param name="source"></param>
     /// <param name="condition"></param>
     /// <returns></returns>
-    public static IEnumerable<IEnumerable<T>> GroupWhile<T>(this IEnumerable<T> source, Func<T, T, bool> condition)
+    public static IEnumerable<IEnumerable<TSource>> GroupWhile<TSource>(this IEnumerable<TSource> source, Func<TSource, TSource, bool> condition)
     {
-        T previousItem = source.First();
-        List<T> currentGroupList = new List<T>();
+        TSource previousItem = source.First();
+        List<TSource> currentGroupList = new List<TSource>();
         currentGroupList.Add(previousItem);
 
-        foreach (T currentItem in source.Skip(1))
+        foreach (TSource currentItem in source.Skip(1))
         {
             if (condition(previousItem, currentItem) == false)
             {
                 yield return currentGroupList;
-                currentGroupList = new List<T>();
+                currentGroupList = new List<TSource>();
             }
             currentGroupList.Add(currentItem);
             previousItem = currentItem;

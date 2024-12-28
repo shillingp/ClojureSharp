@@ -5,12 +5,12 @@ namespace ClojureSharp.Extensions.Array;
 
 public static partial class ArrayExtensions
 {
-    public static int IndexOf<TSource>(this TSource[] source, Func<TSource, bool> predicate)
+    public static int LastIndexOf<TSource>(this TSource[] source, Func<TSource, bool> predicate)
     {
         Span<TSource> sourceSpan = source.AsSpan();
         ref TSource searchSpace = ref MemoryMarshal.GetReference(sourceSpan);
-        
-        for (int i = 0; i < sourceSpan.Length; i++)
+
+        for (int i = sourceSpan.Length - 1; i >= 0; i--)
             if (predicate(Unsafe.Add(ref searchSpace, i)))
                 return i;
 

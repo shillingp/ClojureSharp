@@ -1,7 +1,8 @@
-﻿using System.Diagnostics.Contracts;
-using ClojureSharp.Tokenizer;
+﻿using System.Buffers;
+using System.Diagnostics.Contracts;
 using ClojureSharp.Extensions;
 using ClojureSharp.Extensions.Array;
+using ClojureSharp.Tokenizer;
 
 namespace ClojureSharp.SyntaxTreeParser;
 
@@ -109,11 +110,9 @@ internal static class SyntaxTreeBuilder
     [Pure]
     private static SyntaxTreeNode ParseMethod(params Token[] methodTokens)
     {
-        Token[] methodArgumentTokens = methodTokens
-            .SkipWhile(token => token.Type is not TokenType.OpenParenthesisToken)
-            .Skip(1)
-            .TakeWhile(token => token.Type is not TokenType.CloseParenthesisToken)
-            .ToArray();
+        int argumentOpenParenthesisIndex = methodTokens.IndexOf(token => token is { Type: TokenType.OpenParenthesisToken }); 
+        int argumentCloseParenthesisIndex = methodTokens.IndexOf(token => token is { Type: TokenType.CloseParenthesisToken });
+        Token[] methodArgumentTokens = methodTokens[(argumentOpenParenthesisIndex+1)..argumentCloseParenthesisIndex];
         
         Token[] methodBodyTokens = RetrieveAllTokensInInnerScope(methodTokens);
         
@@ -129,12 +128,12 @@ internal static class SyntaxTreeBuilder
     }
     
     [Pure]
-    private static SyntaxTreeNode[] ParseMethodArguments(params Token[] methodArgumentTokens)
+    private static ReadOnlySpan<SyntaxTreeNode> ParseMethodArguments(params Token[] methodArgumentTokens)
     {
         ArgumentException.ThrowIfNullOrEmpty("Value cannot be an empty collection.", nameof(methodArgumentTokens));
-        
-        SyntaxTreeNode[] argumentSyntaxTreeNodes = new SyntaxTreeNode[methodArgumentTokens.Length / 2];
 
+        SyntaxTreeNode[] argumentSyntaxTreeNodes = ArrayPool<SyntaxTreeNode>.Shared.Rent(methodArgumentTokens.Length / 2);
+        
         int syntaxNodeCounter = 0;
         for (int i = 1; i < methodArgumentTokens.Length; i += 3)
         {
@@ -145,7 +144,8 @@ internal static class SyntaxTreeBuilder
             };
         }
 
-        return argumentSyntaxTreeNodes;
+        ArrayPool<SyntaxTreeNode>.Shared.Return(argumentSyntaxTreeNodes);
+        return argumentSyntaxTreeNodes[..syntaxNodeCounter];
     }
 
     [Pure]
@@ -231,7 +231,7 @@ internal static class SyntaxTreeBuilder
             return ParseExpression(expressionTokens[1..]);
         
         if (expressionTokens[0] is { Type: TokenType.OpenParenthesisToken }
-            && Array.FindLastIndex(expressionTokens, token => token is { Type: TokenType.CloseParenthesisToken})
+            && expressionTokens.LastIndexOf(token => token is { Type: TokenType.CloseParenthesisToken})
                 is { } closeParenthesisIndex and >= 0)
             return ParseExpression(expressionTokens[1..closeParenthesisIndex]);
 
@@ -350,12 +350,20 @@ internal static class SyntaxTreeBuilder
     [Pure]
     private static SyntaxTreeNode[] ParseCollection(params Token[] collectionTokens)
     {
-        return collectionTokens
-            .GroupWhile((prev, next) =>
-                prev is not { Type: TokenType.CommaToken }
-                && next is not { Type: TokenType.CommaToken })
-            .Where(tokenGroup => tokenGroup.First() is not { Type: TokenType.CommaToken })
-            .Select(part => ParseExpression(part.ToArray()))
-            .ToArray();
+        int elementsCounter = 0;
+        SyntaxTreeNode[] collectionElements = ArrayPool<SyntaxTreeNode>.Shared.Rent(collectionTokens.Length);
+
+        int i = 0;
+        for (int j = 1; j < collectionTokens.Length + 1; j++)
+        {
+            if (j < collectionTokens.Length && collectionTokens[j] is not { Type: TokenType.CommaToken }) 
+                continue;
+            
+            collectionElements[elementsCounter++] = ParseExpression(collectionTokens[i..j]);
+            i = j + 1;
+        }
+
+        ArrayPool<SyntaxTreeNode>.Shared.Return(collectionElements);
+        return collectionElements[..elementsCounter];
     }
 }
