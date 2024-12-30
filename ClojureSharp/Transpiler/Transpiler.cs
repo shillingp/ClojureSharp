@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics.Contracts;
 using System.Text;
 using ClojureSharp.SyntaxTreeParser;
+using ClojureSharp.Extensions.Span;
 
 namespace ClojureSharp.Transpiler;
 
@@ -119,7 +120,7 @@ internal static class Transpiler
         StringBuilder output = new StringBuilder()
             .Append("(let [");
 
-        if (syntaxTreeNode.Children.Any(child => child is { Type: SyntaxTreeNodeType.Assignment}))
+        if (syntaxTreeNode.Children.AsSpan().IndexOf(child => child is { Type: SyntaxTreeNodeType.Assignment}) > -1)
         {
             output
                 .AppendJoin(Environment.NewLine + "  ", syntaxTreeNode.Children

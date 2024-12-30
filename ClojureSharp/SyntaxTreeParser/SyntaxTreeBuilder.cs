@@ -68,18 +68,17 @@ internal static class SyntaxTreeBuilder
     private static int FindIndexOfLastClosingScope(ReadOnlySpan<Token> tokens, int startingPosition)
     {
         uint openScopeCount = 0;
-        int? firstOpeningScope = null;
-
+        
         for (int i = startingPosition; i < tokens.Length; i++)
         {
             Token token = tokens[i];
-            if (token is { Type: TokenType.CloseScopeToken } && --openScopeCount == 0)
-                return i;
-            
-            if (token is { Type: TokenType.OpenScopeToken })
+            switch (token)
             {
-                firstOpeningScope ??= i + 1;
-                openScopeCount++;
+                case { Type: TokenType.CloseScopeToken } when --openScopeCount == 0:
+                    return i;
+                case { Type: TokenType.OpenScopeToken }:
+                    openScopeCount++;
+                    break;
             }
         }
 
@@ -175,7 +174,7 @@ internal static class SyntaxTreeBuilder
             }
             
             int indexOfScopeEnding = tokenIndex +
-                methodBodyTokens[tokenIndex..methodBodyTokens.Length]
+                methodBodyTokens[tokenIndex..]
                     .IndexOf(token => token is { Type: TokenType.SemicolonToken });
             
             if (tokenIndex + methodBodyTokens[tokenIndex..]

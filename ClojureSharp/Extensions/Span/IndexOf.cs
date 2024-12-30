@@ -18,4 +18,18 @@ public static partial class SpanExtensions
 
         return -1;
     }
+    
+    public static int IndexOf<TSource>(
+        this Span<TSource> source,
+        Func<TSource, bool> predicate,
+        int startIndex = 0)
+    {
+        ref TSource searchSpace = ref MemoryMarshal.GetReference(source);
+        
+        for (int i = startIndex; i < source.Length; i++)
+            if (predicate(Unsafe.Add(ref searchSpace, i)))
+                return i;
+
+        return -1;
+    }
 }
