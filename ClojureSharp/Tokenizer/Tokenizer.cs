@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics.Contracts;
 using System.Text;
+using ClojureSharp.Extensions.Queue;
 
 namespace ClojureSharp.Tokenizer;
 
@@ -23,19 +24,17 @@ internal class Tokenizer(string sourceCode)
                 && _sourceCode.Peek() is '/'
                 && _sourceCode.ElementAt(1) is '/')
             {
-                StringBuilder commentStringBuilder = new StringBuilder();
-                while (_sourceCode.Peek() is not ('\r' or '\n'))
-                    commentStringBuilder.Append(_sourceCode.Dequeue());
+                string parsedCommentString = ParseWithPredicate(c => c is not ('\r' or '\n'));
 
-                tokenBuffer.Enqueue(new Token(TokenType.CommentToken, commentStringBuilder.ToString()[2..]));
+                tokenBuffer.Enqueue(new Token(TokenType.CommentToken, parsedCommentString[2..]));
                 continue;
             }
             
             if (char.IsLetterOrDigit(character))
             {
-                string parsedIdentifier = char.IsLetter(character)
-                    ? ParseIdentifier()
-                    : ParseNumber();
+                string parsedIdentifier = ParseWithPredicate(char.IsLetter(character)
+                    ? c => char.IsLetterOrDigit(c) || c is '<' or '>'
+                    : c => char.IsDigit(c) || c is '.');
                 
                 tokenBuffer.Enqueue(parsedIdentifier switch
                 {
@@ -65,12 +64,8 @@ internal class Tokenizer(string sourceCode)
 
             if (char.IsSymbol(character) || char.IsPunctuation(character))
             {
-                StringBuilder parsedSymbolSequenceBuilder = new StringBuilder();
-                int peekCounter = 0;
-                while (_sourceCode.ElementAtOrDefault(peekCounter++) is { } peekedSymbol 
-                    && (char.IsSymbol(peekedSymbol) || char.IsPunctuation(peekedSymbol)))
-                    parsedSymbolSequenceBuilder.Append(peekedSymbol);
-                string parsedSymbolSequence = parsedSymbolSequenceBuilder.ToString();
+                string parsedSymbolSequence =
+                    ParseWithPredicateNonConsuming(c => char.IsSymbol(c) || char.IsPunctuation(c));
                 
                 Token? matchingToken = parsedSymbolSequence switch
                 {
@@ -84,11 +79,10 @@ internal class Tokenizer(string sourceCode)
                         => null
                 };
 
-                if (matchingToken is not null)
+                if (matchingToken is { })
                 {
                     tokenBuffer.Enqueue(matchingToken.Value);
-                    for (int i = parsedSymbolSequence.Length - 1; i >= 0; i--)
-                        _sourceCode.Dequeue();
+                    _sourceCode.Dequeue(parsedSymbolSequence.Length);
                     continue;
                 }
                 
@@ -131,26 +125,24 @@ internal class Tokenizer(string sourceCode)
             && genericTypeOpenBracket + 1 != genericTypeCloseBracket;
     }
 
-    private string ParseIdentifier()
+    private string ParseWithPredicate(Func<char, bool> predicate)
     {
-        StringBuilder parsedCharacters = new StringBuilder();
-
-        while (_sourceCode.TryPeek(out char character) && (char.IsLetterOrDigit(character) || character is '<' or '>'))
-            parsedCharacters.Append(_sourceCode.Dequeue());
-
-        return parsedCharacters.ToString();
+        StringBuilder parsedString = new StringBuilder();
+        
+        while (_sourceCode.TryPeek(out char peekedCharacter) && predicate(peekedCharacter))
+            parsedString.Append(_sourceCode.Dequeue());
+        
+        return parsedString.ToString();
     }
 
-    private string ParseNumber()
+    private string ParseWithPredicateNonConsuming(Func<char, bool> predicate)
     {
-        StringBuilder parsedCharacters = new StringBuilder();
-
-        while (_sourceCode.TryPeek(out char character) && (char.IsDigit(character) || character is '.' or 'f' or 'd'))
-            parsedCharacters.Append(_sourceCode.Dequeue());
+        StringBuilder parsedString = new StringBuilder();
+        int peekCounter = 0;
         
-        return parsedCharacters
-            .Replace("f", "")
-            .Replace("d", "")
-            .ToString();
+        while (_sourceCode.ElementAtOrDefault(peekCounter++) is { } peekedCharacter && predicate(peekedCharacter))
+            parsedString.Append(peekedCharacter);
+        
+        return parsedString.ToString();
     }
 }
