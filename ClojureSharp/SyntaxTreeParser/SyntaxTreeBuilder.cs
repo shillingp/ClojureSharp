@@ -331,6 +331,7 @@ internal static class SyntaxTreeBuilder
         if (expressionTokens.IndexOf(token => token is { Type: TokenType.EqualityOperatorToken }) is { } equalityIndex and >= 0)
             return new SyntaxTreeNode
             {
+                Value = "=",
                 Type = SyntaxTreeNodeType.EqualityCheck,
                 Children =
                 [

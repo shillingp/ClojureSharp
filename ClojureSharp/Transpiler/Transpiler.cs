@@ -29,7 +29,7 @@ internal static class Transpiler
             SyntaxTreeNodeType.Method => ConvertMethodSyntaxTreeNodeToCode(syntaxTreeNode),
             SyntaxTreeNodeType.Expression => ConvertExpressionSyntaxTreeNodeToCode(syntaxTreeNode),
             SyntaxTreeNodeType.Assignment => ConvertAssignmentSyntaxTreeNodeToCode(syntaxTreeNode),
-            SyntaxTreeNodeType.EqualityCheck => ConvertEqualityCheckSyntaxTreeNodeToCode(syntaxTreeNode),
+            SyntaxTreeNodeType.EqualityCheck => ConvertExpressionSyntaxTreeNodeToCode(syntaxTreeNode),
             SyntaxTreeNodeType.Literal => ConvertLiteralSyntaxTreeNodeToCode(syntaxTreeNode),
             SyntaxTreeNodeType.Branch => ConvertBranchSyntaxTreeNodeToCode(syntaxTreeNode),
             SyntaxTreeNodeType.Class => ConvertClassSyntaxTreeNodeToCode(syntaxTreeNode),
@@ -136,17 +136,6 @@ internal static class Transpiler
             
         return output
             .Append("]")
-            .ToString();
-    }
-
-    [Pure]
-    private static string ConvertEqualityCheckSyntaxTreeNodeToCode(SyntaxTreeNode syntaxTreeNode)
-    {
-        return new StringBuilder()
-            .Append("(= ")
-            .AppendJoin(' ', syntaxTreeNode.Children
-                .Select(ConvertAbstractSyntaxTreeToCode))
-            .Append(')')
             .ToString();
     }
     

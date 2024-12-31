@@ -75,7 +75,7 @@ internal class Tokenizer(string sourceCode)
                 Token? matchingToken = parsedSymbolSequence switch
                 {
                     "==" 
-                        => new Token(TokenType.EqualityOperatorToken),
+                        => new Token(TokenType.EqualityOperatorToken, "="),
                     "&&" or "||" 
                         => new Token(TokenType.BooleanOperationToken, parsedSymbolSequence),
                     "+=" or "-=" or "*=" or "/="
